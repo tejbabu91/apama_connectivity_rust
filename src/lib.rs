@@ -10,9 +10,9 @@ use std::fmt::{self, Debug, Display};
 macro_rules! DefineTrasport {
     ($elem:ident) => {
         #[no_mangle]
-        pub extern fn rust_transport_create() -> *mut WrappedTransport {
+        pub extern fn rust_transport_create(owner: *mut CppOwner) -> *mut WrappedTransport {
             println!("Inside create_transport");
-            let mut t = $elem::new();
+            let mut t = $elem::new(HostSide{owner});
             // TODO: We are leaking the transport object at the moment as
             // we are not doing manual cleanup of raw pointers in the C++
             // destructor.
@@ -28,12 +28,26 @@ pub extern fn add(first: i32, second: i32) -> i32 {
     first + second
 }
 
+pub enum CppOwner {}
+
+// Copy should be cheap as it contains only c++ pointer.
+#[derive(Copy, Clone)]
+pub struct HostSide {
+    owner: *mut CppOwner
+}
+impl HostSide {
+    fn sendMessageTwoardsHost(&self, msg: Message) {
+        println!("Called sendMessageTwoardsHost: {:?}", msg);
+    }
+}
+
 pub trait Transport {
     fn start(&self);
     fn get_data(&self) -> i64;
     fn shutdown(&self);
     fn hostReady(&self);
     fn deliverMessageTowardsTransport(&self, msg: Message);
+    fn getHostSide(&self) -> HostSide;
 }
 
 #[repr(C)]
@@ -212,7 +226,8 @@ pub fn rust_to_c_data(data: &Data) {
 
 // ======================================== User Code =================
 pub struct MyTransport {
-    data: i64
+    data: i64,
+    hostSide: HostSide
 }
 
 #[macro_use]
@@ -231,17 +246,17 @@ impl Transport for MyTransport {
     }
     fn deliverMessageTowardsTransport(&self, msg: Message) {
         println!("MyTransport received message from host: {:?}", msg);
+        self.getHostSide().sendMessageTwoardsHost(msg);
     }
-
+    fn getHostSide(&self) -> HostSide {
+        self.hostSide
+    }
 }
+
 impl MyTransport {
-    fn new() -> Box<Transport> {
-        Box::new(MyTransport{data: 43})
+    fn new(h: HostSide) -> Box<Transport> {
+        Box::new(MyTransport{data: 43, hostSide: h})
     }
-}
-
-pub fn create_transport() -> Box<Transport> {
-    Box::new(MyTransport{data: 43})
 }
 
 DefineTrasport!(MyTransport);

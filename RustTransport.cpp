@@ -21,7 +21,7 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 	{
 		
 		logger.info("Sum from rust: %d", add(10, 20));
-		rustTransport = rust_transport_create();
+		rustTransport = rust_transport_create(this);
 		logger.info("Rust transport object: %d", rustTransport);
 		call_back_from_c(rustTransport);
 		Data d = {19, 42};
