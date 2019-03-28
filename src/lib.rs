@@ -1,8 +1,14 @@
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+#![allow(unused_imports)]
+#![allow(non_upper_case_globals)]
+#![allow(dead_code)]
+
 extern crate libc;
+
 mod ctypes;
 use std::collections::HashMap;
-use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::ffi::{CStr, CString};
 use crate::ctypes::*;
 use std::fmt::{self, Debug, Display};
 
@@ -12,11 +18,11 @@ macro_rules! DefineTrasport {
         #[no_mangle]
         pub extern fn rust_transport_create(owner: *mut CppOwner) -> *mut WrappedTransport {
             println!("Inside create_transport");
-            let mut t = $elem::new(HostSide{owner});
+            let t = $elem::new(HostSide{owner});
             // TODO: We are leaking the transport object at the moment as
             // we are not doing manual cleanup of raw pointers in the C++
             // destructor.
-            let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
+            let wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
             return Box::into_raw(wt);
         }
     };
@@ -110,12 +116,11 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
     unsafe {
         let tag = t.tag;
         let val = t.__bindgen_anon_1;
-        match (tag) {
+        match tag {
             sag_data_tag_SAG_DATA_EMPTY => Data::None,
             sag_data_tag_SAG_DATA_BOOLEAN => Data::Boolean(val.boolean),
             sag_data_tag_SAG_DATA_DOUBLE => Data::Float(val.fp),
             sag_data_tag_SAG_DATA_INTEGER => Data::Integer(val.integer),
-            sag_data_tag_SAG_DATA_DECIMAL => Data::None,
             sag_data_tag_SAG_DATA_STRING => Data::String(CStr::from_ptr(val.string).to_string_lossy().into_owned()),
             sag_data_tag_SAG_DATA_LIST => {
                 let val = &*(val.list.table);
@@ -137,7 +142,7 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
                     let key = c_to_rust_data(&entry.key);
                     let value = c_to_rust_data(&entry.value);
                     // convert key into string if not a string
-                    let key = match(key) {
+                    let key = match key {
                         Data::String(s) => s,
                         _ => key.to_string()
                     };
@@ -145,18 +150,20 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
                 }
                 Data::Map(map)
             },
+            sag_data_tag_SAG_DATA_DECIMAL => Data::None,
             sag_data_tag_SAG_DATA_BUFFER => Data::None,
             sag_data_tag_SAG_DATA_CUSTOM => Data::None,
             _ => Data::None
         }
     }
 }
-
+#[allow(unused_variables)]
+#[allow(unused_assignments)]
 pub fn rust_to_c_data(data: &Data) {
     unsafe {
         let mut tag = sag_data_tag_SAG_DATA_EMPTY;
         let mut val = sag_underlying_data_t__bindgen_ty_1 {boolean: true};
-        match (data) {
+        match data {
             Data::None => {
                 tag = sag_data_tag_SAG_DATA_EMPTY;
             },
@@ -174,6 +181,7 @@ pub fn rust_to_c_data(data: &Data) {
             },
             Data::String(v) => {
                 tag = sag_data_tag_SAG_DATA_STRING;
+                let x = CString::new(v.as_str()).unwrap();
                 // TODO: Convert string to raw::c_char
             },
             Data::List(v) => {
