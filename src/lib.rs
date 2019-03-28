@@ -15,6 +15,9 @@ pub extern fn add(first: i32, second: i32) -> i32 {
 pub trait Transport {
     fn start(&self);
     fn get_data(&self) -> i64;
+    fn shutdwon(&self);
+    fn hostReady(&self);
+    fn deliverMessageTowardsTransport(&self, msg: Message);
 }
 
 #[repr(C)]
@@ -192,10 +195,19 @@ pub struct MyTransport {
 
 impl Transport for MyTransport {
     fn start(&self) {
-        println!("MyStransport started with {}", self.data);
+        println!("MyTransport started with {}", self.data);
     }
     fn get_data(&self) -> i64 {
         self.data
+    }
+    fn shutdwon(&self) {
+        println!("MyTransport shutdown done");
+    }
+    fn hostReady(&self) {
+        println!("MyTransport handled hostReady");
+    }
+    fn deliverMessageTowardsTransport(&self, msg: Message) {
+        println!("MyTransport received message from host");
     }
 }
 
