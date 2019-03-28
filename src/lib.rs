@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 
 #[no_mangle]
 pub extern fn add(first: i32, second: i32) -> i32 {
@@ -15,38 +16,27 @@ pub struct WrappedTransport {
     pub transport: *mut Transport
 }
 
-#[repr(C)]
-pub struct MyTransport {
-    data: i64
-}
 
-impl Transport for MyTransport {
-    fn start(&self) {
-        println!("MyStransport started with {}", self.data);
-    }
-    fn get_data(&self) -> i64 {
-        self.data
-    }
-}
-/*
-enum Payload {
+
+enum DataType {
     Boolean(bool),
     Integer(i64),
     Double(f64),
-    String(str),
-    List(Vec<Payload>),
-    Map(std::collections::HashMap<Payload, Payload>)
-
+    String(String),
+    List(Vec<DataType>),
+    Map(HashMap<DataType, DataType>),
+    Buffer(Vec<u8>)
 }
 
 pub struct Message {
-    
+    payload: DataType,
+    metadata: HashMap<DataType,DataType>
 }
-*/
+
 #[no_mangle]
 pub extern fn create_transport() -> *mut WrappedTransport {
     println!("Inside create_transport");
-    let mut t = Box::new(MyTransport{data: 42});
+    let mut t = user_create_transport();
     let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
     return Box::into_raw(wt);
 }
@@ -60,6 +50,26 @@ pub extern fn call_back_from_c(t: *mut WrappedTransport){
     //let mut t = Box::new(MyTransport{data: 42});
     //return &mut *t;
 }
+
+
+// ======================================== User Code =================
+pub struct MyTransport {
+    data: i64
+}
+
+impl Transport for MyTransport {
+    fn start(&self) {
+        println!("MyStransport started with {}", self.data);
+    }
+    fn get_data(&self) -> i64 {
+        self.data
+    }
+}
+
+pub fn user_create_transport() -> Box<Transport> {
+    Box::new(MyTransport{data: 43})
+}
+
 
 #[cfg(test)]
 mod tests {
