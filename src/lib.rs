@@ -10,6 +10,10 @@ pub trait Transport {
     fn get_data(&self) -> i64;
 }
 
+#[repr(C)]
+pub struct WrappedTransport {
+    pub transport: *mut Transport
+}
 
 #[repr(C)]
 pub struct MyTransport {
@@ -24,19 +28,34 @@ impl Transport for MyTransport {
         self.data
     }
 }
+/*
+enum Payload {
+    Boolean(bool),
+    Integer(i64),
+    Double(f64),
+    String(str),
+    List(Vec<Payload>),
+    Map(std::collections::HashMap<Payload, Payload>)
 
+}
+
+pub struct Message {
+    
+}
+*/
 #[no_mangle]
-pub extern fn create_transport() -> *mut MyTransport {
+pub extern fn create_transport() -> *mut WrappedTransport {
     println!("Inside create_transport");
     let mut t = Box::new(MyTransport{data: 42});
-    return Box::into_raw(t);
+    let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
+    return Box::into_raw(wt);
 }
 
 #[no_mangle]
-pub extern fn call_back_from_c(t: *mut MyTransport ){
+pub extern fn call_back_from_c(t: *mut WrappedTransport){
     unsafe {
         println!("call_back_from_c_with_rust_ptr: {:p}", t);
-        println!("call_back_from_c_with_rust_ptr: {}", (*t).get_data());
+        println!("call_back_from_c_with_rust_ptr value: {}", (*((*t).transport)).get_data());
     }
     //let mut t = Box::new(MyTransport{data: 42});
     //return &mut *t;
