@@ -22,12 +22,6 @@ macro_rules! DefineTrasport {
     };
 }
 
-#[no_mangle]
-pub extern fn add(first: i32, second: i32) -> i32 {
-    println!("Inside rust: {} + {}", first, second);
-    first + second
-}
-
 pub enum CppOwner {}
 
 // Copy should be cheap as it contains only c++ pointer.
@@ -43,7 +37,6 @@ impl HostSide {
 
 pub trait Transport {
     fn start(&self);
-    fn get_data(&self) -> i64;
     fn shutdown(&self);
     fn hostReady(&self);
     fn deliverMessageTowardsTransport(&self, msg: Message);
@@ -70,39 +63,12 @@ pub enum Data {
 impl fmt::Display for Data {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
-        // or, alternatively:
-        // fmt::Debug::fmt(self, f)
     }
 }
 #[derive(Debug)]
 pub struct Message {
     pub payload: Data,
     pub metadata: HashMap<String,Data>
-}
-
-
-
-#[no_mangle]
-pub extern fn call_back_from_c(t: *mut WrappedTransport){
-    unsafe {
-        println!("call_back_from_c_with_rust_ptr: {:p}", t);
-        println!("call_back_from_c_with_rust_ptr value: {}", (*((*t).transport)).get_data());
-    }
-    //let mut t = Box::new(MyTransport{data: 42});
-    //return &mut *t;
-}
-
-pub struct MyData {
-    a: i64,
-    b: i64
-}
-
-#[no_mangle]
-pub extern fn send_data_towards_transport(t: *mut MyData){
-    unsafe {
-        println!("send_data_towards_transport: {:p}", t);
-        println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
-    }
 }
 
 #[no_mangle]
@@ -230,13 +196,9 @@ pub struct MyTransport {
     hostSide: HostSide
 }
 
-#[macro_use]
 impl Transport for MyTransport {
     fn start(&self) {
         println!("MyTransport started with {}", self.data);
-    }
-    fn get_data(&self) -> i64 {
-        self.data
     }
     fn shutdown(&self) {
         println!("MyTransport shutdown done");
