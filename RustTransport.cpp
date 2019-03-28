@@ -94,7 +94,7 @@ namespace rust {
 		logger.info("Rust transport object: %d", rustTransport);
 		call_back_from_c(rustTransport);
 		Data d = {19, 42};
-		send_msg_towards_transport(&d);
+		send_data_towards_transport(&d);
 		// map_t &config = const_cast<map_t&>(params.getConfig());
 		// logger.info("C++ config: %s", to_string(config).c_str());
 		// std::ostringstream os;
@@ -108,6 +108,25 @@ namespace rust {
 	void RustTransport::start()
 	{
 		logger.info("C++ start called");
+
+		Message msg;
+		{
+			map_t m;
+			m.insert(data_t("k_str"), data_t("v_str"));
+			m.insert(data_t("k_num"), data_t(2.34));
+			m.insert(data_t("k_bool"), data_t(true));
+			list_t l;
+			l.push_back(data_t("str"));
+			l.push_back(data_t(42.0));
+			l.push_back(data_t(true));
+			l.push_back(data_t(l.copy()));
+			m.insert(data_t("k_list"), data_t(std::move(l)));
+			m.insert(data_t("k_map"), m.copy());
+			msg.setPayload(data_t(std::move(m)));
+		}
+		msg.setPayload(data_t("some string"));
+		logger.info("Sending msg: %s", to_string(msg).c_str());
+		send_msg_towards_transport(reinterpret_cast<sag_underlying_message_t*>(&msg));
 		// go_transport_start(this);
 
 		// char buf[11] = "HelloWorld";

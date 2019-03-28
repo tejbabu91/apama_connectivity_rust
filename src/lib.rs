@@ -1,6 +1,9 @@
 extern crate libc;
-
+mod ctypes;
 use std::collections::HashMap;
+use std::ffi::CStr;
+use std::os::raw::c_char;
+use crate::ctypes::*;
 
 #[no_mangle]
 pub extern fn add(first: i32, second: i32) -> i32 {
@@ -18,19 +21,20 @@ pub struct WrappedTransport {
     pub transport: *mut Transport
 }
 
-enum DataType {
-    Boolean(bool),
-    Integer(i64),
-    Double(f64),
-    String(String),
-    List(Vec<DataType>),
-    Map(HashMap<DataType, DataType>),
-    Buffer(Vec<u8>)
+pub enum DataType {
+     pub Boolean(bool),
+     pub Integer(i64),
+     pub Double(f64),
+     pub String(String),
+     pub List(Vec<DataType>),
+     pub Map(HashMap<DataType, DataType>),
+     pub Buffer(Vec<u8>)
 }
 
+#[repr(C)]
 pub struct Message {
-    payload: DataType,
-    metadata: HashMap<DataType,DataType>
+    pub payload: DataType,
+    pub metadata: HashMap<DataType,DataType>
 }
 
 #[no_mangle]
@@ -57,14 +61,34 @@ pub struct Data {
 }
 
 #[no_mangle]
-pub extern fn send_msg_towards_transport(t: *mut Data){
+pub extern fn send_data_towards_transport(t: *mut Data){
     unsafe {
-        println!("send_msg_towards_transport: {:p}", t);
-        println!("send_msg_towards_transport: {}, {}", (*t).a, (*t).b);
+        println!("send_data_towards_transport: {:p}", t);
+        println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
     }
     //let mut t = Box::new(MyTransport{data: 42});
     //return &mut *t;
 }
+
+
+#[no_mangle]
+pub extern fn send_msg_towards_transport(t: *mut sag_underlying_message_t){
+    unsafe {
+        println!("received_msg_in_rust_transport: {:?}, {:p}", t, t);
+        //println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
+        let t = &*t;
+        println!("received_msg_in_rust_transport: tag={:?}, {:?}", t.payload.tag, CStr::from_ptr(t.payload.__bindgen_anon_1.string));
+        
+        c_to_rust_msg(&*t);
+
+
+    }
+    //let mut t = Box::new(MyTransport{data: 42});
+    //return &mut *t;
+}
+
+pub fn c_to_rust_msg(t: &sag_underlying_message_t) {}
+//pub fn 
 
 
 // ======================================== User Code =================
@@ -88,8 +112,10 @@ pub fn create_transport() -> Box<Transport> {
 
 #[cfg(test)]
 mod tests {
+    
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
+        let x :int_least64_t = 123;
     }
 }
