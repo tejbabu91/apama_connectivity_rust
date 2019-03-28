@@ -6,6 +6,22 @@ use std::os::raw::c_char;
 use crate::ctypes::*;
 use std::fmt::{self, Debug, Display};
 
+
+macro_rules! DefineTrasport {
+    ($elem:ident) => {
+        #[no_mangle]
+        pub extern fn rust_transport_create() -> *mut WrappedTransport {
+            println!("Inside create_transport");
+            let mut t = $elem::new();
+            // TODO: We are leaking the transport object at the moment as
+            // we are not doing manual cleanup of raw pointers in the C++
+            // destructor.
+            let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
+            return Box::into_raw(wt);
+        }
+    };
+}
+
 #[no_mangle]
 pub extern fn add(first: i32, second: i32) -> i32 {
     println!("Inside rust: {} + {}", first, second);
@@ -73,30 +89,15 @@ pub extern fn send_data_towards_transport(t: *mut MyData){
         println!("send_data_towards_transport: {:p}", t);
         println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
     }
-    //let mut t = Box::new(MyTransport{data: 42});
-    //return &mut *t;
-}
-
-#[no_mangle]
-pub extern fn rust_transport_create() -> *mut WrappedTransport {
-    println!("Inside create_transport");
-    let mut t = create_transport();
-    let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
-    return Box::into_raw(wt);
 }
 
 #[no_mangle]
 pub extern fn rust_transport_send_msg_towards(t: *mut WrappedTransport, m: *mut sag_underlying_message_t){
     unsafe {
         println!("received_msg_in_rust_transport: {:?}, {:p}", m, m);
-        //println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
         let m = &*m;
-        //println!("received_msg_in_rust_transport: tag={:?}, {:?}", t.payload.tag, CStr::from_ptr(t.payload.__bindgen_anon_1.string));
-        
         let msg = c_to_rust_msg(m);
-
         println!("The msg: {:?}", msg);
-    
         (*((*t).transport)).deliverMessageTowardsTransport(msg);
     }
 }
@@ -214,6 +215,7 @@ pub struct MyTransport {
     data: i64
 }
 
+#[macro_use]
 impl Transport for MyTransport {
     fn start(&self) {
         println!("MyTransport started with {}", self.data);
@@ -230,19 +232,17 @@ impl Transport for MyTransport {
     fn deliverMessageTowardsTransport(&self, msg: Message) {
         println!("MyTransport received message from host: {:?}", msg);
     }
+
+}
+impl MyTransport {
+    fn new() -> Box<Transport> {
+        Box::new(MyTransport{data: 43})
+    }
 }
 
 pub fn create_transport() -> Box<Transport> {
     Box::new(MyTransport{data: 43})
 }
 
+DefineTrasport!(MyTransport);
 
-#[cfg(test)]
-mod tests {
-    
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-        let x :int_least64_t = 123;
-    }
-}

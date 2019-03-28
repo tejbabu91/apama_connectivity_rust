@@ -26,18 +26,9 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 		call_back_from_c(rustTransport);
 		Data d = {19, 42};
 		send_data_towards_transport(&d);
-		// map_t &config = const_cast<map_t&>(params.getConfig());
-		// logger.info("C++ config: %s", to_string(config).c_str());
-		// std::ostringstream os;
-		// apply_visitor(JsonVisitor(os), data_t(std::move(config)));
-		// logger.info("Config JSON: %s", os.str().c_str());
-		// std::string content = os.str();
-		// //char * str = const_cast<char*>(payload.c_str());
-		// go_transport_create(this, static_cast<void*>(const_cast<char*>(content.c_str())), content.size());
 	}
 
-	void RustTransport::start()
-	{
+	void RustTransport::start() {
 		logger.info("C++ start called");
 		rust_transport_start(rustTransport);
 
@@ -60,10 +51,6 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 		//msg.setPayload(data_t("some string"));
 		logger.info("Sending msg: %s", to_string(msg).c_str());
 		rust_transport_send_msg_towards(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&msg));
-		// go_transport_start(this);
-
-		// char buf[11] = "HelloWorld";
-		// CallIntoTransport(buf, sizeof(buf)-1);
 	}
 
 	/** Stop the plugin and wait for the request-handling thread */
@@ -77,9 +64,6 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 	{
 		logger.info("C++ deliverMessageTowardsTransport: %s", to_string(m).c_str());
 		rust_transport_send_msg_towards(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&m));
-		// auto payload = get<std::string>(m.getPayload());
-		// char * str = const_cast<char*>(payload.c_str());
-		// go_transport_deliverMessageTowardsTransport(this, static_cast<void*>(str), payload.size());
 	}
 
 	void RustTransport::towardsHost(char* buf, int bufLen) {
