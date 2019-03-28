@@ -90,10 +90,11 @@ namespace rust {
 		
 		logger.info("Sum from rust: %d", add(10, 20));
 
-		void * rustTransport = create_transport();
+		void * rustTransport = rust_create_transport();
 		logger.info("Rust transport object: %d", rustTransport);
 		call_back_from_c(rustTransport);
-
+		Data d = {19, 42};
+		send_msg_towards_transport(&d);
 		// map_t &config = const_cast<map_t&>(params.getConfig());
 		// logger.info("C++ config: %s", to_string(config).c_str());
 		// std::ostringstream os;

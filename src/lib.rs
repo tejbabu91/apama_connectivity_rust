@@ -1,3 +1,5 @@
+extern crate libc;
+
 use std::collections::HashMap;
 
 #[no_mangle]
@@ -16,8 +18,6 @@ pub struct WrappedTransport {
     pub transport: *mut Transport
 }
 
-
-
 enum DataType {
     Boolean(bool),
     Integer(i64),
@@ -34,9 +34,9 @@ pub struct Message {
 }
 
 #[no_mangle]
-pub extern fn create_transport() -> *mut WrappedTransport {
+pub extern fn rust_create_transport() -> *mut WrappedTransport {
     println!("Inside create_transport");
-    let mut t = user_create_transport();
+    let mut t = create_transport();
     let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
     return Box::into_raw(wt);
 }
@@ -46,6 +46,21 @@ pub extern fn call_back_from_c(t: *mut WrappedTransport){
     unsafe {
         println!("call_back_from_c_with_rust_ptr: {:p}", t);
         println!("call_back_from_c_with_rust_ptr value: {}", (*((*t).transport)).get_data());
+    }
+    //let mut t = Box::new(MyTransport{data: 42});
+    //return &mut *t;
+}
+
+pub struct Data {
+    a: i64,
+    b: i64
+}
+
+#[no_mangle]
+pub extern fn send_msg_towards_transport(t: *mut Data){
+    unsafe {
+        println!("send_msg_towards_transport: {:p}", t);
+        println!("send_msg_towards_transport: {}, {}", (*t).a, (*t).b);
     }
     //let mut t = Box::new(MyTransport{data: 42});
     //return &mut *t;
@@ -66,7 +81,7 @@ impl Transport for MyTransport {
     }
 }
 
-pub fn user_create_transport() -> Box<Transport> {
+pub fn create_transport() -> Box<Transport> {
     Box::new(MyTransport{data: 43})
 }
 
