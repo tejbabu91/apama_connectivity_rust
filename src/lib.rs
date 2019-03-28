@@ -147,6 +147,44 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
     }
 }
 
+pub fn rust_to_c_data(data: &Data) {
+    unsafe {
+        let mut tag = sag_data_tag_SAG_DATA_EMPTY;
+        let mut val = sag_underlying_data_t__bindgen_ty_1 {boolean: true};
+        match (data) {
+            Data::None => {
+                tag = sag_data_tag_SAG_DATA_EMPTY;
+            },
+            Data::Boolean(v) => {
+                tag = sag_data_tag_SAG_DATA_BOOLEAN;
+                val.boolean = *v;
+            }
+            Data::Integer(v) => {
+                tag = sag_data_tag_SAG_DATA_INTEGER;
+                val.integer = *v;
+            },
+            Data::Float(v) => {
+                tag = sag_data_tag_SAG_DATA_DOUBLE;
+                val.fp = *v;
+            },
+            Data::String(v) => {
+                tag = sag_data_tag_SAG_DATA_STRING;
+                // TODO: Convert string to raw::c_char
+            },
+            Data::List(v) => {
+                tag = sag_data_tag_SAG_DATA_LIST;
+            },
+
+            Data::Map(v) => {
+                tag = sag_data_tag_SAG_DATA_MAP;
+            },
+            _ => {
+                tag = sag_data_tag_SAG_DATA_EMPTY;
+            }
+        };
+    }
+}
+
 // ======================================== User Code =================
 pub struct MyTransport {
     data: i64
