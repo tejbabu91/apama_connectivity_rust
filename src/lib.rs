@@ -21,20 +21,20 @@ pub struct WrappedTransport {
     pub transport: *mut Transport
 }
 
-pub enum DataType {
-     pub Boolean(bool),
-     pub Integer(i64),
-     pub Double(f64),
-     pub String(String),
-     pub List(Vec<DataType>),
-     pub Map(HashMap<DataType, DataType>),
-     pub Buffer(Vec<u8>)
+pub enum Data {
+    Boolean(bool),
+    Integer(i64),
+    Double(f64),
+    String(String),
+    List(Vec<Data>),
+    Map(HashMap<Data, Data>),
+    Buffer(Vec<u8>)
 }
 
 #[repr(C)]
 pub struct Message {
-    pub payload: DataType,
-    pub metadata: HashMap<DataType,DataType>
+    pub payload: Data,
+    pub metadata: HashMap<Data,Data>
 }
 
 #[no_mangle]
@@ -55,13 +55,13 @@ pub extern fn call_back_from_c(t: *mut WrappedTransport){
     //return &mut *t;
 }
 
-pub struct Data {
+pub struct MyData {
     a: i64,
     b: i64
 }
 
 #[no_mangle]
-pub extern fn send_data_towards_transport(t: *mut Data){
+pub extern fn send_data_towards_transport(t: *mut MyData){
     unsafe {
         println!("send_data_towards_transport: {:p}", t);
         println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
@@ -87,9 +87,12 @@ pub extern fn send_msg_towards_transport(t: *mut sag_underlying_message_t){
     //return &mut *t;
 }
 
-pub fn c_to_rust_msg(t: &sag_underlying_message_t) {}
-//pub fn 
+pub fn c_to_rust_msg(t: &sag_underlying_message_t) {
+    c_to_rust_data(&t.payload);
+}
+pub fn c_to_rust_data(t: &sag_underlying_data_t) {
 
+}
 
 // ======================================== User Code =================
 pub struct MyTransport {
