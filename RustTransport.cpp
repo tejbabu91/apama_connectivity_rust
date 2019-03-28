@@ -16,81 +16,12 @@ using namespace com::softwareag::connectivity;
 
 namespace apamax {
 namespace rust {
-	/** data_t -> JSON */
-	struct JsonVisitor : public const_visitor <JsonVisitor, void> {
-		explicit JsonVisitor(std::ostringstream &w) : writer(w) {}
-		void visitString(const char *s) const { writer << "\"" << s << "\""; }
-		void visitInteger(int64_t i) const { writer << i; }
-		void visitDouble(double d) const {
-			if(d == INFINITY) { writer << "\"Infinity\""; }
-			else if(d == -INFINITY) { writer << "\"-Infinity\""; }
-			else if(std::isnan(d)) { writer << "\"NaN\""; }
-			else { writer << d; }
-		}
-		void visitBoolean(bool b) const { 
-			if (b) {
-				writer << "true";
-			} else {
-				writer << "false";
-			}
-		 }
-		void visitDecimal(const decimal_t &v) const {
-			// decimal64 d;
-			// char buf[decimal64::BUFFER_SIZE];
-			// d.setUnderlyingInteger(v.d);
-			// d.toString(buf);
-			// writer << ap_strtod(buf, nullptr);
-			writer << "\"<decimal>\"";
-		}
-		void visitList(const list_t &li) const {
-			writer << "[";
-			for (auto it = li.begin(); it != li.end(); ++it) {
-				const data_t &dat = *it;
-				apply_visitor(JsonVisitor(writer), dat);
-				if (it != --li.end()) {
-					writer << ",";
-				}
-			}
-			writer << "]";
-		}
-		void visitMap(const map_t &m) const {
-			writer << "{";
-			for (auto it = m.begin(); it != m.end(); ++it) {
-				const data_t &k = it.key();
-				const data_t &v = it.value();
-				if(k.type_tag() == SAG_DATA_STRING) {
-					writer << "\"" << get<const char*>(k) << "\"";
-				} else {
-					writer << "\"" << convert_to<std::string>(k).c_str() << "\"";
-				}
-				writer << ":";
-				apply_visitor(JsonVisitor(writer), v);
-				if (it != --m.end()) {
-					writer << ",";
-				}
-			}
-			writer << "}";
-		}
-		void visitEmpty() const {
-			writer << "\"Null\"";
-		}
-		void error(const std::string &type) const {
-			throw std::runtime_error("Unsupported type in Transportwards message: " + type);
-		}
-
-	private:
-		std::ostringstream &writer;
-	};
-
-
-
-	RustTransport::RustTransport(const TransportConstructorParameters &params)
+RustTransport::RustTransport(const TransportConstructorParameters &params)
 		: AbstractSimpleTransport(params)
 	{
 		
 		logger.info("Sum from rust: %d", add(10, 20));
-
-		void * rustTransport = rust_create_transport();
+		rustTransport = rust_transport_create();
 		logger.info("Rust transport object: %d", rustTransport);
 		call_back_from_c(rustTransport);
 		Data d = {19, 42};
@@ -108,6 +39,7 @@ namespace rust {
 	void RustTransport::start()
 	{
 		logger.info("C++ start called");
+		rust_transport_start(rustTransport);
 
 		Message msg;
 		{
@@ -127,7 +59,7 @@ namespace rust {
 		}
 		//msg.setPayload(data_t("some string"));
 		logger.info("Sending msg: %s", to_string(msg).c_str());
-		send_msg_towards_transport(reinterpret_cast<sag_underlying_message_t*>(&msg));
+		rust_transport_send_msg_towards(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&msg));
 		// go_transport_start(this);
 
 		// char buf[11] = "HelloWorld";
@@ -137,13 +69,14 @@ namespace rust {
 	/** Stop the plugin and wait for the request-handling thread */
 	void RustTransport::shutdown()
 	{
-		// go_transport_shutdown(this);
+		rust_transport_shutdown(rustTransport);
 	}
 
 	/** Parse the request and queue it for later servicing */
 	void RustTransport::deliverMessageTowardsTransport(Message &m)
 	{
 		logger.info("C++ deliverMessageTowardsTransport: %s", to_string(m).c_str());
+		rust_transport_send_msg_towards(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&m));
 		// auto payload = get<std::string>(m.getPayload());
 		// char * str = const_cast<char*>(payload.c_str());
 		// go_transport_deliverMessageTowardsTransport(this, static_cast<void*>(str), payload.size());
@@ -157,7 +90,7 @@ namespace rust {
 	}
 
 	void RustTransport::hostReady() {
-		//go_transport_hostready(this);
+		rust_transport_hostReady(rustTransport);
 	}
 /** Export this transport */
 SAG_DECLARE_CONNECTIVITY_TRANSPORT_CLASS(RustTransport)

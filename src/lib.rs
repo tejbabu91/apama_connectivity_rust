@@ -15,7 +15,7 @@ pub extern fn add(first: i32, second: i32) -> i32 {
 pub trait Transport {
     fn start(&self);
     fn get_data(&self) -> i64;
-    fn shutdwon(&self);
+    fn shutdown(&self);
     fn hostReady(&self);
     fn deliverMessageTowardsTransport(&self, msg: Message);
 }
@@ -50,13 +50,7 @@ pub struct Message {
     pub metadata: HashMap<String,Data>
 }
 
-#[no_mangle]
-pub extern fn rust_create_transport() -> *mut WrappedTransport {
-    println!("Inside create_transport");
-    let mut t = create_transport();
-    let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
-    return Box::into_raw(wt);
-}
+
 
 #[no_mangle]
 pub extern fn call_back_from_c(t: *mut WrappedTransport){
@@ -83,22 +77,49 @@ pub extern fn send_data_towards_transport(t: *mut MyData){
     //return &mut *t;
 }
 
+#[no_mangle]
+pub extern fn rust_transport_create() -> *mut WrappedTransport {
+    println!("Inside create_transport");
+    let mut t = create_transport();
+    let mut wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
+    return Box::into_raw(wt);
+}
 
 #[no_mangle]
-pub extern fn send_msg_towards_transport(t: *mut sag_underlying_message_t){
+pub extern fn rust_transport_send_msg_towards(t: *mut WrappedTransport, m: *mut sag_underlying_message_t){
     unsafe {
-        println!("received_msg_in_rust_transport: {:?}, {:p}", t, t);
+        println!("received_msg_in_rust_transport: {:?}, {:p}", m, m);
         //println!("send_data_towards_transport: {}, {}", (*t).a, (*t).b);
-        let t = &*t;
+        let m = &*m;
         //println!("received_msg_in_rust_transport: tag={:?}, {:?}", t.payload.tag, CStr::from_ptr(t.payload.__bindgen_anon_1.string));
         
-        let msg = c_to_rust_msg(&*t);
+        let msg = c_to_rust_msg(m);
 
-    println!("The msg: {:?}", msg);
-
+        println!("The msg: {:?}", msg);
+    
+        (*((*t).transport)).deliverMessageTowardsTransport(msg);
     }
-    //let mut t = Box::new(MyTransport{data: 42});
-    //return &mut *t;
+}
+
+#[no_mangle]
+pub extern fn rust_transport_start(t: *mut WrappedTransport) {
+    unsafe {
+        (*((*t).transport)).start();
+    }
+}
+
+#[no_mangle]
+pub extern fn rust_transport_shutdown(t: *mut WrappedTransport) {
+    unsafe {
+        (*((*t).transport)).shutdown();
+    }
+}
+
+#[no_mangle]
+pub extern fn rust_transport_hostReady(t: *mut WrappedTransport) {
+    unsafe {
+        (*((*t).transport)).hostReady();
+    }
 }
 
 pub fn c_to_rust_msg(t: &sag_underlying_message_t) -> Message {
@@ -200,14 +221,14 @@ impl Transport for MyTransport {
     fn get_data(&self) -> i64 {
         self.data
     }
-    fn shutdwon(&self) {
+    fn shutdown(&self) {
         println!("MyTransport shutdown done");
     }
     fn hostReady(&self) {
         println!("MyTransport handled hostReady");
     }
     fn deliverMessageTowardsTransport(&self, msg: Message) {
-        println!("MyTransport received message from host");
+        println!("MyTransport received message from host: {:?}", msg);
     }
 }
 

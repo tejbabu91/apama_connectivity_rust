@@ -17,6 +17,7 @@ namespace rust {
 class RustTransport: public com::softwareag::connectivity::AbstractSimpleTransport
 {
 
+	void * rustTransport;
 public:
 	/** Create the transport and check we have the correct (no) config */
 	RustTransport(const TransportConstructorParameters &params);
