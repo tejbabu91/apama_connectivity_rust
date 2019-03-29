@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use crate::ctypes::*;
 use std::fmt::{self, Debug, Display};
-
+use std::ptr;
 
 macro_rules! DefineTrasport {
     ($elem:ident) => {
@@ -38,6 +38,12 @@ pub struct HostSide {
 impl HostSide {
     fn sendMessageTwoardsHost(&self, msg: Message) {
         println!("Called sendMessageTwoardsHost: {:?}", msg);
+        let m = rust_to_c_msg(&msg);
+        let mb = Box::into_raw(Box::new(m));
+        unsafe {
+            rust_send_msg_towards_host(self.owner, mb);
+            let _ = Box::from_raw(mb);
+        }
     }
 }
 
@@ -78,7 +84,7 @@ pub struct Message {
 }
 
 #[no_mangle]
-pub extern fn rust_transport_send_msg_towards(t: *mut WrappedTransport, m: *mut sag_underlying_message_t){
+pub extern fn rust_send_msg_towards_transport(t: *mut WrappedTransport, m: *mut sag_underlying_message_t){
     unsafe {
         println!("received_msg_in_rust_transport: {:?}, {:p}", m, m);
         let m = &*m;
@@ -107,6 +113,11 @@ pub extern fn rust_transport_hostReady(t: *mut WrappedTransport) {
     unsafe {
         (*((*t).transport)).hostReady();
     }
+}
+
+#[link(name="RustTransportSupport")]
+extern {
+    fn rust_send_msg_towards_host(owner: *mut CppOwner, m: *mut sag_underlying_message_t);
 }
 
 pub fn c_to_rust_msg(t: &sag_underlying_message_t) -> Message {
@@ -157,9 +168,19 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
         }
     }
 }
+
+pub fn rust_to_c_msg(msg: &Message) -> sag_underlying_message_t {
+    unsafe {
+        sag_underlying_message_t{
+            payload: rust_to_c_data(&msg.payload),
+            metadata: sag_underlying_map_t{table: ptr::null_mut()}
+        }
+    }
+}
+
 #[allow(unused_variables)]
 #[allow(unused_assignments)]
-pub fn rust_to_c_data(data: &Data) {
+pub fn rust_to_c_data(data: &Data) -> sag_underlying_data_t {
     unsafe {
         let mut tag = sag_data_tag_SAG_DATA_EMPTY;
         let mut val = sag_underlying_data_t__bindgen_ty_1 {boolean: true};
@@ -181,20 +202,30 @@ pub fn rust_to_c_data(data: &Data) {
             },
             Data::String(v) => {
                 tag = sag_data_tag_SAG_DATA_STRING;
-                let x = CString::new(v.as_str()).unwrap();
-                // TODO: Convert string to raw::c_char
+                val.string = CString::new(v.as_str()).unwrap().into_raw();
             },
+            /*
             Data::List(v) => {
                 tag = sag_data_tag_SAG_DATA_LIST;
+                // sag_underlying_vector_table_t
+                // sag_underlying_vector
+                let mut vv: Vec<sag_underlying_data_t> = Vec::with_capacity(v.len());
+                for e in v {
+                    vv.push(rust_to_c_data(e));
+                }
+                // let x= v.as_mut_ptr();
+                let y: [sag_underlying_data_t; 1usize] = vv.as_mut_ptr();
             },
 
             Data::Map(v) => {
                 tag = sag_data_tag_SAG_DATA_MAP;
             },
+            */
             _ => {
                 tag = sag_data_tag_SAG_DATA_EMPTY;
             }
         };
+        sag_underlying_data_t{__bindgen_anon_1: val, tag:tag}
     }
 }
 
@@ -216,6 +247,36 @@ impl Transport for MyTransport {
     }
     fn deliverMessageTowardsTransport(&self, msg: Message) {
         println!("MyTransport received message from host: {:?}", msg);
+        //self.getHostSide().sendMessageTwoardsHost(msg);
+        let msg = Message {
+            // payload: Data::String("Hello from transport".to_string()),
+            payload: Data::Integer(123),
+            metadata: HashMap::new()
+        };
+        self.getHostSide().sendMessageTwoardsHost(msg);
+
+        let msg = Message {
+            payload: Data::String("Hello from transport".to_string()),
+            metadata: HashMap::new()
+        };
+        self.getHostSide().sendMessageTwoardsHost(msg);
+
+        let msg = Message {
+            payload: Data::Float(123.45),
+            metadata: HashMap::new()
+        };
+        self.getHostSide().sendMessageTwoardsHost(msg);
+
+        let msg = Message {
+            payload: Data::Boolean(true),
+            metadata: HashMap::new()
+        };
+        self.getHostSide().sendMessageTwoardsHost(msg);
+
+        let msg = Message {
+            payload: Data::None,
+            metadata: HashMap::new()
+        };
         self.getHostSide().sendMessageTwoardsHost(msg);
     }
     fn getHostSide(&self) -> HostSide {

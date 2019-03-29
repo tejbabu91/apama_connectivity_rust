@@ -31,7 +31,7 @@ public:
 	/** Parse the request and queue it for later servicing */
 	virtual void deliverMessageTowardsTransport(com::softwareag::connectivity::Message &m) override;
 
-    void towardsHost(char* buf, int bufLen);
+    void towardsHost(com::softwareag::connectivity::Message *m);
 
 	virtual void hostReady();
 };

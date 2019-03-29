@@ -9,6 +9,7 @@
 #include "RustTransport.h"
 #include <vector>
 #include<sstream>
+#include<iostream>
 #include <cmath>
 #include "RustInterface.h"
 
@@ -20,11 +21,11 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 		: AbstractSimpleTransport(params)
 	{		
 		rustTransport = rust_transport_create(this);
-		logger.info("Rust transport object: %d", rustTransport);
+		//logger.info("Rust transport object: %d", rustTransport);
 	}
 
 	void RustTransport::start() {
-		logger.info("C++ start called");
+		//logger.info("C++ start called");
 		rust_transport_start(rustTransport);
 
 		Message msg;
@@ -44,8 +45,8 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 			msg.setPayload(data_t(std::move(l)));
 		}
 		//msg.setPayload(data_t("some string"));
-		logger.info("Sending msg: %s", to_string(msg).c_str());
-		rust_transport_send_msg_towards(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&msg));
+		//logger.info("Sending msg: %s", to_string(msg).c_str());
+		deliverMessageTowardsTransport(msg);
 	}
 
 	/** Stop the plugin and wait for the request-handling thread */
@@ -57,15 +58,13 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 	/** Parse the request and queue it for later servicing */
 	void RustTransport::deliverMessageTowardsTransport(Message &m)
 	{
-		logger.info("C++ deliverMessageTowardsTransport: %s", to_string(m).c_str());
-		rust_transport_send_msg_towards(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&m));
+		//logger.info("C++ deliverMessageTowardsTransport: %s", to_string(m).c_str());
+		rust_send_msg_towards_transport(rustTransport, reinterpret_cast<sag_underlying_message_t*>(&m));
 	}
 
-	void RustTransport::towardsHost(char* buf, int bufLen) {
-		data_t buffer(buf, bufLen);
-		Message m;
-		m.setPayload(std::move(buffer));
-		hostSide->sendBatchTowardsHost(&m, &m+1);
+	void RustTransport::towardsHost(Message *m) {
+		logger.info("C++ sending msg toward host: %s", to_string(*m).c_str());
+		hostSide->sendBatchTowardsHost(m, m+1);
 	}
 
 	void RustTransport::hostReady() {
@@ -74,6 +73,10 @@ RustTransport::RustTransport(const TransportConstructorParameters &params)
 /** Export this transport */
 SAG_DECLARE_CONNECTIVITY_TRANSPORT_CLASS(RustTransport)
 
-}} // apamax.golang
+}} // apamax.rust
 
 
+void rust_send_msg_towards_host(void* ptr, sag_underlying_message_t* msg) {
+	apamax::rust::RustTransport* t = reinterpret_cast<apamax::rust::RustTransport*>(ptr);
+	t->towardsHost(reinterpret_cast<Message*>(msg));
+}
