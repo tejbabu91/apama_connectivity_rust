@@ -1,6 +1,6 @@
 APAMA CONNECTIVITY RUST
 
-   A libraray to enable writing Apama Transport plugins in Rust.
+   A library to enable writing Apama Transport plugins in Rust.
 
 DESCRIPTION
 
