@@ -12,6 +12,8 @@ use std::ffi::{CStr, CString};
 use crate::ctypes::*;
 use std::fmt::{self, Debug, Display};
 use std::ptr;
+use std::cmp::{PartialEq, Eq};
+use std::hash::{Hash, Hasher};
 
 macro_rules! DefineTrasport {
     ($elem:ident) => {
@@ -63,7 +65,7 @@ pub struct WrappedTransport {
     pub transport: *mut Transport
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Data {
     Boolean(bool),
     Integer(i64),
@@ -80,6 +82,24 @@ impl fmt::Display for Data {
         write!(f, "{:?}", self)
     }
 }
+
+impl Eq for Data {}
+impl Hash for Data {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        use Data::*;
+        match &self {
+          Boolean(v) => v.hash(state),
+          Integer(v) => v.hash(state),
+          String(v) => v.hash(state),
+          List(v) => v.hash(state),
+          Buffer(v) => v.hash(state),
+          Float(v) => v.to_bits().hash(state),
+          // Map gets 0 hashcode - inefficient but should produce correct values
+          _ => 0.hash(state)
+        };
+    }
+}
+
 #[derive(Debug)]
 pub struct Message {
     pub payload: Data,
@@ -96,6 +116,7 @@ pub extern fn rust_send_msg_towards_transport(t: *mut WrappedTransport, m: *mut 
 
 #[no_mangle]
 pub extern fn rust_transport_start(t: *mut WrappedTransport) {
+    let x = HashMap::<Data, Data>::new();
     unsafe {
         (*((*t).transport)).start();
     }
@@ -312,3 +333,54 @@ impl MyTransport {
 
 DefineTrasport!(MyTransport);
 
+#[test]
+fn test_data_hash_map() {
+    let mut h: HashMap<Data,Data> = HashMap::new();
+    h.insert(Data::String("Hello K".to_string()),Data::String("Hello V".to_string()));
+    h.insert(Data::Integer(42),Data::Integer(24));
+    h.insert(Data::Float(4.2),Data::Float(2.4));
+    h.insert(Data::Boolean(true),Data::Boolean(false));
+    // Key and value are list
+    h.insert(
+        Data::List(vec![
+            Data::String("k".to_string()), Data::Integer(42), Data::Float(4.2), Data::Boolean(true)]),
+        Data::List(vec![
+            Data::String("v".to_string()), Data::Integer(24), Data::Float(2.4), Data::Boolean(false)]));
+
+    // key and value are map
+    let mut k1: HashMap<Data,Data> = HashMap::new();
+    let mut k2: HashMap<Data,Data> = HashMap::new();
+    k1.insert(Data::Integer(12), Data::Float(1.2));
+    k2.insert(Data::Float(4.2), Data::Integer(42));
+    
+    // h.insert(Data::Map(k1), Data::Integer(33));
+    // h.insert(Data::Map(k2), Data::Integer(43));
+
+    assert_eq!(
+        Data::String("Hello V".to_string()),
+        h[&Data::String("Hello K".to_string())]);
+
+    assert_eq!(
+        Some(&Data::Integer(24)),
+        h.get(&Data::Integer(42)));
+
+    assert_eq!(
+        Some(&Data::Float(2.4)),
+        h.get(&Data::Float(4.2)));
+
+    assert_eq!(
+        Some(&Data::Boolean(false)),
+        h.get(&Data::Boolean(true)));
+
+    assert_eq!(
+        Some(&Data::Boolean(false)),
+        h.get(&Data::Boolean(true)));
+
+    assert_eq!(
+        Some(&Data::List(vec![
+            Data::String("v".to_string()), Data::Integer(24), Data::Float(2.4), Data::Boolean(false)])),
+        h.get(&Data::List(vec![
+            Data::String("k".to_string()), Data::Integer(42), Data::Float(4.2), Data::Boolean(true)])));
+
+    
+}
