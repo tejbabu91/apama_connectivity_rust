@@ -13,6 +13,7 @@ extern "C" {
 	void rust_transport_shutdown(void*);
 	void rust_transport_hostReady(void*);
 	void rust_send_msg_towards_host(void*, sag_underlying_message_t*);
+	void rust_transport_destroy(void*);
 }
 
 

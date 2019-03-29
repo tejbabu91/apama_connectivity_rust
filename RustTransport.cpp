@@ -17,12 +17,16 @@ using namespace com::softwareag::connectivity;
 
 namespace apamax {
 namespace rust {
-RustTransport::RustTransport(const TransportConstructorParameters &params)
+	RustTransport::RustTransport(const TransportConstructorParameters &params)
 		: AbstractSimpleTransport(params)
 	{		
 		auto &conf = this->config;
 		rustTransport = rust_transport_create(this, 
 			reinterpret_cast<sag_underlying_map_t*>(&conf));
+	}
+
+	RustTransport::~RustTransport() {
+		rust_transport_destroy(rustTransport);
 	}
 
 	void RustTransport::start() {

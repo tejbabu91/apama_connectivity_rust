@@ -21,7 +21,8 @@ class RustTransport: public com::softwareag::connectivity::AbstractSimpleTranspo
 public:
 	/** Create the transport and check we have the correct (no) config */
 	RustTransport(const TransportConstructorParameters &params);
-	
+	~RustTransport();
+
 	/** Start the request-handling thread */
 	virtual void start();
 

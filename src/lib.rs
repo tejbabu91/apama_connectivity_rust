@@ -115,6 +115,16 @@ pub extern fn rust_transport_hostReady(t: *mut WrappedTransport) {
     }
 }
 
+
+#[no_mangle]
+pub extern fn rust_transport_destroy(t: *mut WrappedTransport) {
+    unsafe {
+        // take ownership back so that rust can destroy it.
+        let bw = Box::from_raw(t);
+        let _bt = Box::from_raw(bw.transport);
+    }
+}
+
 #[link(name="cpplayer")]
 extern {
     fn rust_send_msg_towards_host(owner: *mut CppOwner, m: *mut sag_underlying_message_t);
