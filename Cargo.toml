@@ -1,10 +1,17 @@
 [package]
 name = "rust_ap_connectivity"
 version = "0.1.0"
-authors = ["Gyan <gys@softwareag.com>"]
+authors = ["Gyan <gys@softwareag.com>", "Tej Babu Balireddi <tejbabu.balireddi@softwareag.com"]
 edition = "2018"
+build = "build.rs"
+
 [lib]
 name = "rust_transport"
-crate-type = ["staticlib"]
+crate-type = ["dylib"]
+
 [dependencies]
-libc = "0.2.50"
+libc = "0.2.51"
+
+[build-dependencies]
+cc = "1.0"
+make-cmd = "0.1.0"
