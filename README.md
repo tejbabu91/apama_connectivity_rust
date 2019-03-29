@@ -11,3 +11,5 @@ DESCRIPTION
   to Apama as a C++ plugin.
  
  
+BUILD
+   > cargo build
