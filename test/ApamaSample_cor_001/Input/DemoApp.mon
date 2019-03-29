@@ -1,0 +1,38 @@
+/**
+ * $Copyright (c) 2019 Software AG, Darmstadt, Germany and/or Software AG USA Inc., Reston, VA, USA, and/or its subsidiaries and/or its affiliates and/or their licensors.$ 
+ * Use, reproduction, transfer, publication or disclosure is prohibited except as specifically provided for in your License Agreement with Software AG 
+ */
+package apamax.golang;
+
+using com.softwareag.connectivity.ConnectivityPlugins;
+
+
+/** Internal event for sending to the chain */
+event EchoMessage
+{
+	integer id;
+	string data;
+}
+
+monitor RustTransportSample
+{
+	action onload()
+	{
+		// get responses that come back from the chain
+		monitor.subscribe("intohost");
+
+		// signal that we are ready to receive events
+		ConnectivityPlugins.onApplicationInitialized();
+		string data := "Hello to Go from Apama";
+		simpleRequest(data);
+	}
+	action simpleRequest(string data) {
+		integer id := integer.getUnique();
+		on EchoMessage() as resp {
+			log "Got echo response "+resp.toString() at INFO;
+		}
+		send EchoMessage(id, data) to "fromhost";
+		log "Sent: " + EchoMessage(id, data).toString();
+	}
+}
+

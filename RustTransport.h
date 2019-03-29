@@ -12,7 +12,7 @@ namespace apamax {
 namespace rust {
 
 /**
- *  GoTransport which initializes go runtime and handle communication to/from go transport
+ *  RustTransport which initializes rust transport and handles communication to/from rust transport
  */
 class RustTransport: public com::softwareag::connectivity::AbstractSimpleTransport
 {

@@ -16,26 +16,6 @@ use std::ptr;
 use std::cmp::{PartialEq, Eq};
 use std::hash::{Hash, Hasher};
 
-#[macro_export]
-macro_rules! DefineTrasport {
-    ($elem:ident) => {
-        #[no_mangle]
-        pub extern fn rust_transport_create(owner: *mut CppOwner, config: *mut api::ctypes::sag_underlying_map_t) -> *mut WrappedTransport {
-            use std::collections::HashMap;
-            let config = match unsafe {config.as_ref()} {
-                Some(v) => c_to_rust_map(&*v),
-                None    => HashMap::<Data,Data>::new()
-            };
-            let t = $elem::new(HostSide::new(owner), config);
-            // TODO: We are leaking the transport object at the moment as
-            // we are not doing manual cleanup of raw pointers in the C++
-            // destructor.
-            let wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
-            return Box::into_raw(wt);
-        }
-    };
-}
-
 pub enum CppOwner {}
 
 // Copy should be cheap as it contains only c++ pointer.
@@ -122,7 +102,6 @@ pub extern fn rust_send_msg_towards_transport(t: *mut WrappedTransport, m: *mut 
 
 #[no_mangle]
 pub extern fn rust_transport_start(t: *mut WrappedTransport) {
-    let x = HashMap::<Data, Data>::new();
     unsafe {
         (*((*t).transport)).start();
     }

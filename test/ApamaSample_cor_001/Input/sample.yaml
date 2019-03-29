@@ -3,8 +3,8 @@ connectivityPlugins:
     libraryName: ClassifierCodec
     class: ClassifierCodec
   rustTransport:
-    directory: ${PARENT_DIR}/target/debug
-    libraryName: RustTransport
+    directory: ${PARENT_DIR}/Release
+    libraryName: echo_transport
     class: RustTransport
   stringCodec:
     libraryName: connectivity-string-codec
@@ -14,23 +14,18 @@ connectivityPlugins:
     class: DiagnosticCodec
 
 startChains:
-
-  # Create a chain which will take HTTPRequest events and send them to the
-  # transport, then classify the responses as either an HTTPResponse or
-  # an HTTPError and turn them into those events in the correlator
-  http:
+  rustTransport:
     # Use the Map host plugin, so the payload type will be a map<string,data>
     # with the keys being the name of the fields in the event
     - apama.eventMap:
         # Capture events to this channel ...
         subscribeChannels:
-          - getRequest
+          - fromhost
         # ... and send them back to this channel
-        defaultChannel: httpdata
+        defaultChannel: intohost
 
 
-    - diag: { tag: transport }
-    # - rustTransport
+    - diag: { tag: rusttransport }
     - rustTransport:
         k1: "v1"
         k2:

@@ -5,10 +5,6 @@ authors = ["Gyan <gys@softwareag.com>", "Tej Babu Balireddi <tejbabu.balireddi@s
 edition = "2018"
 build = "build.rs"
 
-[lib]
-name = "RustTransport"
-crate-type = ["dylib"]
-
 [dependencies]
 libc = "0.2.51"
 

@@ -1,0 +1,13 @@
+[package]
+name = "echo_transport"
+version = "0.1.0"
+authors = ["Tej Babu Balireddi <tejbabu.balireddi@softwareag.com>"]
+edition = "2018"
+
+[dependencies]
+rust_ap_connectivity = {path = "../../"}
+
+[lib]
+#name = "echo_transport"
+crate-type = ["dylib"]
+

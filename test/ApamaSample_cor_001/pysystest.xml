@@ -1,0 +1,30 @@
+<?xml version="1.0" standalone="yes"?>
+<pysystest type="auto" state="runnable">
+    
+  <description> 
+    <title>Monitorscript injection and execution, sending events from process stdin</title>    
+    <purpose><![CDATA[
+Demonstrates sending events into a Correlator with a loaded monitorscript application by 
+writing to the stdin of an engine_send process started in the background. This shows how 
+events can be sent to the Correlator directly within the testcase class as opposed to 
+sending via an event file.
+]]>
+    </purpose>
+  </description>
+
+  <classification>
+    <groups>
+      <group></group>
+    </groups>
+  </classification>
+
+  <data>
+    <class name="PySysTest" module="run"/>
+  </data>
+  
+  <traceability>
+    <requirements>
+      <requirement id=""/>     
+    </requirements>
+  </traceability>
+</pysystest>

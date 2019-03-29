@@ -32,25 +32,25 @@ namespace rust {
 	void RustTransport::start() {
 		rust_transport_start(rustTransport);
 
-		Message msg;
-		{
-			map_t m;
-			m.insert(data_t("k_str"), data_t("v_str"));
-			m.insert(data_t("k_num"), data_t(2.34));
-			m.insert(data_t("k_bool"), data_t(true));
-			list_t l;
-			l.push_back(data_t("str"));
-			l.push_back(data_t(42.0));
-			l.push_back(data_t(true));
-			l.push_back(data_t(l.copy()));
-			l.push_back(data_t(m.copy()));
-			//m.insert(data_t("k_list"), data_t(std::move(l)));
-			//m.insert(data_t("k_map"), m.copy());
-			msg.setPayload(data_t(std::move(l)));
-		}
+		// Message msg;
+		// {
+		// 	map_t m;
+		// 	m.insert(data_t("k_str"), data_t("v_str"));
+		// 	m.insert(data_t("k_num"), data_t(2.34));
+		// 	m.insert(data_t("k_bool"), data_t(true));
+		// 	list_t l;
+		// 	l.push_back(data_t("str"));
+		// 	l.push_back(data_t(42.0));
+		// 	l.push_back(data_t(true));
+		// 	l.push_back(data_t(l.copy()));
+		// 	l.push_back(data_t(m.copy()));
+		// 	//m.insert(data_t("k_list"), data_t(std::move(l)));
+		// 	//m.insert(data_t("k_map"), m.copy());
+		// 	msg.setPayload(data_t(std::move(l)));
+		// }
 		//msg.setPayload(data_t("some string"));
 		//logger.info("Sending msg: %s", to_string(msg).c_str());
-		deliverMessageTowardsTransport(msg);
+		// deliverMessageTowardsTransport(msg);
 	}
 
 	/** Stop the plugin and wait for the request-handling thread */
