@@ -115,7 +115,7 @@ pub extern fn rust_transport_hostReady(t: *mut WrappedTransport) {
     }
 }
 
-#[link(name="RustTransportSupport")]
+#[link(name="cpplayer")]
 extern {
     fn rust_send_msg_towards_host(owner: *mut CppOwner, m: *mut sag_underlying_message_t);
 }
@@ -170,18 +170,16 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
 }
 
 pub fn rust_to_c_msg(msg: &Message) -> sag_underlying_message_t {
-    unsafe {
-        sag_underlying_message_t{
-            payload: rust_to_c_data(&msg.payload),
-            metadata: sag_underlying_map_t{table: ptr::null_mut()}
-        }
+    sag_underlying_message_t{
+        payload: rust_to_c_data(&msg.payload),
+        metadata: sag_underlying_map_t{table: ptr::null_mut()}
     }
 }
 
 #[allow(unused_variables)]
 #[allow(unused_assignments)]
 pub fn rust_to_c_data(data: &Data) -> sag_underlying_data_t {
-    unsafe {
+    // unsafe {
         let mut tag = sag_data_tag_SAG_DATA_EMPTY;
         let mut val = sag_underlying_data_t__bindgen_ty_1 {boolean: true};
         match data {
@@ -226,7 +224,7 @@ pub fn rust_to_c_data(data: &Data) -> sag_underlying_data_t {
             }
         };
         sag_underlying_data_t{__bindgen_anon_1: val, tag:tag}
-    }
+    // }
 }
 
 // ======================================== User Code =================

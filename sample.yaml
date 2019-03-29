@@ -3,7 +3,7 @@ connectivityPlugins:
     libraryName: ClassifierCodec
     class: ClassifierCodec
   rustTransport:
-    directory: ${PARENT_DIR}/Release
+    directory: ${PARENT_DIR}/target/debug
     libraryName: RustTransport
     class: RustTransport
   stringCodec:

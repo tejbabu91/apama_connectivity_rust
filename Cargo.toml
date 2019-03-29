@@ -6,7 +6,7 @@ edition = "2018"
 build = "build.rs"
 
 [lib]
-name = "rust_transport"
+name = "RustTransport"
 crate-type = ["dylib"]
 
 [dependencies]

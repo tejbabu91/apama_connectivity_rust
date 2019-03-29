@@ -29,7 +29,7 @@ ifeq ($(OS), Linux)
 CXX := /usr/bin/g++
 
 
-DEBUG_FLAGS := -ggdb -Wall -Werror -pedantic
+#DEBUG_FLAGS := -ggdb -Wall -Werror -pedantic
 #DEBUG_FLAGS := -O3 -Wall -Werror -pedantic
 CXXFLAGS := -fPIC -std=c++11
 LDFLAGS = -shared -Wl,-soname=$(@F)
