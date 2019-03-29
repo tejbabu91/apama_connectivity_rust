@@ -30,6 +30,10 @@ startChains:
 
 
     - diag: { tag: transport }
-    
-    - rustTransport
+    # - rustTransport
+    - rustTransport:
+        k1: "v1"
+        k2:
+          - "l1"
+          - "l2"
 

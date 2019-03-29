@@ -16,9 +16,12 @@ use std::ptr;
 macro_rules! DefineTrasport {
     ($elem:ident) => {
         #[no_mangle]
-        pub extern fn rust_transport_create(owner: *mut CppOwner) -> *mut WrappedTransport {
-            println!("Inside create_transport");
-            let t = $elem::new(HostSide{owner});
+        pub extern fn rust_transport_create(owner: *mut CppOwner, config: *mut sag_underlying_map_t) -> *mut WrappedTransport {
+            let config = match unsafe {config.as_ref()} {
+                Some(v) => c_to_rust_map(&*v),
+                None    => HashMap::<String,Data>::new()
+            };
+            let t = $elem::new(HostSide{owner}, config);
             // TODO: We are leaking the transport object at the moment as
             // we are not doing manual cleanup of raw pointers in the C++
             // destructor.
@@ -86,10 +89,7 @@ pub struct Message {
 #[no_mangle]
 pub extern fn rust_send_msg_towards_transport(t: *mut WrappedTransport, m: *mut sag_underlying_message_t){
     unsafe {
-        println!("received_msg_in_rust_transport: {:?}, {:p}", m, m);
-        let m = &*m;
-        let msg = c_to_rust_msg(m);
-        println!("The msg: {:?}", msg);
+        let msg = c_to_rust_msg(&*m);
         (*((*t).transport)).deliverMessageTowardsTransport(msg);
     }
 }
@@ -134,38 +134,51 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
             sag_data_tag_SAG_DATA_INTEGER => Data::Integer(val.integer),
             sag_data_tag_SAG_DATA_STRING => Data::String(CStr::from_ptr(val.string).to_string_lossy().into_owned()),
             sag_data_tag_SAG_DATA_LIST => {
-                let val = &*(val.list.table);
-                let mut v: Vec<Data> = Vec::with_capacity(val.count as usize);
-                for x in 0..val.count {
-                    // Need to use get_unchecked because C defined data as array of size 1
-                    v.push(c_to_rust_data(&val.data.get_unchecked(x as usize)));
-                }
+                let v = match val.list.table.as_ref() {
+                    Some(val) => {
+                        let mut v: Vec<Data> = Vec::with_capacity(val.count as usize);
+                        for x in 0..val.count {
+                            // Need to use get_unchecked because C defined data as array of size 1
+                            v.push(c_to_rust_data(&val.data.get_unchecked(x as usize)));
+                        }
+                        v
+                    },
+                    None => Vec::new()
+                };
                 Data::List(v)
             },
             sag_data_tag_SAG_DATA_MAP => {
-                let val = &*(val.map.table);
-                let mut map: HashMap<String,Data> = HashMap::with_capacity(val.capacity as usize);
-                for i in 0..val.capacity {
-                    let entry = val.table.get_unchecked(i as usize);
-                    if entry.hash <= 0 {
-                        continue; // hole
-                    }
-                    let key = c_to_rust_data(&entry.key);
-                    let value = c_to_rust_data(&entry.value);
-                    // convert key into string if not a string
-                    let key = match key {
-                        Data::String(s) => s,
-                        _ => key.to_string()
-                    };
-                    map.insert(key, value);
-                }
-                Data::Map(map)
+                Data::Map(c_to_rust_map(&val.map))
             },
             sag_data_tag_SAG_DATA_DECIMAL => Data::None,
             sag_data_tag_SAG_DATA_BUFFER => Data::None,
             sag_data_tag_SAG_DATA_CUSTOM => Data::None,
             _ => Data::None
         }
+    }
+}
+pub fn c_to_rust_map(m: &sag_underlying_map_t) -> HashMap<String,Data> {
+    unsafe {
+        if let None = m.table.as_ref() {
+            return HashMap::new();
+        }
+        let val = &*(m.table);
+        let mut map: HashMap<String,Data> = HashMap::with_capacity(val.capacity as usize);
+        for i in 0..val.capacity {
+            let entry = val.table.get_unchecked(i as usize);
+            if entry.hash <= 0 {
+                continue; // hole
+            }
+            let key = c_to_rust_data(&entry.key);
+            let value = c_to_rust_data(&entry.value);
+            // convert key into string if not a string
+            let key = match key {
+                Data::String(s) => s,
+                _ => key.to_string()
+            };
+            map.insert(key, value);
+        }
+        map
     }
 }
 
@@ -245,14 +258,12 @@ impl Transport for MyTransport {
     }
     fn deliverMessageTowardsTransport(&self, msg: Message) {
         println!("MyTransport received message from host: {:?}", msg);
-        //self.getHostSide().sendMessageTwoardsHost(msg);
         let msg = Message {
-            // payload: Data::String("Hello from transport".to_string()),
             payload: Data::Integer(123),
             metadata: HashMap::new()
         };
         self.getHostSide().sendMessageTwoardsHost(msg);
-
+        // Send some more messages back to host for testing
         let msg = Message {
             payload: Data::String("Hello from transport".to_string()),
             metadata: HashMap::new()
@@ -283,7 +294,8 @@ impl Transport for MyTransport {
 }
 
 impl MyTransport {
-    fn new(h: HostSide) -> Box<Transport> {
+    fn new(h: HostSide, config: HashMap<String,Data>) -> Box<Transport> {
+        println!("Creating transport with config {:?}", config);
         Box::new(MyTransport{data: 43, hostSide: h})
     }
 }

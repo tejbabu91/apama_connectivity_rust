@@ -20,12 +20,12 @@ namespace rust {
 RustTransport::RustTransport(const TransportConstructorParameters &params)
 		: AbstractSimpleTransport(params)
 	{		
-		rustTransport = rust_transport_create(this);
-		//logger.info("Rust transport object: %d", rustTransport);
+		auto &conf = this->config;
+		rustTransport = rust_transport_create(this, 
+			reinterpret_cast<sag_underlying_map_t*>(&conf));
 	}
 
 	void RustTransport::start() {
-		//logger.info("C++ start called");
 		rust_transport_start(rustTransport);
 
 		Message msg;
