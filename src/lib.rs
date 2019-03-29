@@ -21,7 +21,7 @@ macro_rules! DefineTrasport {
         pub extern fn rust_transport_create(owner: *mut CppOwner, config: *mut sag_underlying_map_t) -> *mut WrappedTransport {
             let config = match unsafe {config.as_ref()} {
                 Some(v) => c_to_rust_map(&*v),
-                None    => HashMap::<String,Data>::new()
+                None    => HashMap::<Data,Data>::new()
             };
             let t = $elem::new(HostSide{owner}, config);
             // TODO: We are leaking the transport object at the moment as
@@ -72,7 +72,7 @@ pub enum Data {
     Float(f64),
     String(String),
     List(Vec<Data>),
-    Map(HashMap<String, Data>),
+    Map(HashMap<Data, Data>),
     Buffer(Vec<u8>),
     None
 }
@@ -103,7 +103,7 @@ impl Hash for Data {
 #[derive(Debug)]
 pub struct Message {
     pub payload: Data,
-    pub metadata: HashMap<String,Data>
+    pub metadata: HashMap<Data,Data>
 }
 
 #[no_mangle]
@@ -188,13 +188,13 @@ pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
         }
     }
 }
-pub fn c_to_rust_map(m: &sag_underlying_map_t) -> HashMap<String,Data> {
+pub fn c_to_rust_map(m: &sag_underlying_map_t) -> HashMap<Data,Data> {
     unsafe {
         if let None = m.table.as_ref() {
             return HashMap::new();
         }
         let val = &*(m.table);
-        let mut map: HashMap<String,Data> = HashMap::with_capacity(val.capacity as usize);
+        let mut map: HashMap<Data,Data> = HashMap::with_capacity(val.capacity as usize);
         for i in 0..val.capacity {
             let entry = val.table.get_unchecked(i as usize);
             if entry.hash <= 0 {
@@ -203,10 +203,10 @@ pub fn c_to_rust_map(m: &sag_underlying_map_t) -> HashMap<String,Data> {
             let key = c_to_rust_data(&entry.key);
             let value = c_to_rust_data(&entry.value);
             // convert key into string if not a string
-            let key = match key {
-                Data::String(s) => s,
-                _ => key.to_string()
-            };
+            // let key = match key {
+            //     Data::String(s) => s,
+            //     _ => key.to_string()
+            // };
             map.insert(key, value);
         }
         map
@@ -325,7 +325,7 @@ impl Transport for MyTransport {
 }
 
 impl MyTransport {
-    fn new(h: HostSide, config: HashMap<String,Data>) -> Box<Transport> {
+    fn new(h: HostSide, config: HashMap<Data,Data>) -> Box<Transport> {
         println!("Creating transport with config {:?}", config);
         Box::new(MyTransport{data: 43, hostSide: h})
     }
@@ -353,8 +353,8 @@ fn test_data_hash_map() {
     k1.insert(Data::Integer(12), Data::Float(1.2));
     k2.insert(Data::Float(4.2), Data::Integer(42));
     
-    // h.insert(Data::Map(k1), Data::Integer(33));
-    // h.insert(Data::Map(k2), Data::Integer(43));
+    h.insert(Data::Map(k1), Data::Integer(33));
+    h.insert(Data::Map(k2), Data::Integer(43));
 
     assert_eq!(
         Data::String("Hello V".to_string()),
@@ -382,5 +382,17 @@ fn test_data_hash_map() {
         h.get(&Data::List(vec![
             Data::String("k".to_string()), Data::Integer(42), Data::Float(4.2), Data::Boolean(true)])));
 
-    
+    // Check that we can retrieve value from map if key itself is a map
+    let mut k1: HashMap<Data,Data> = HashMap::new();
+    let mut k2: HashMap<Data,Data> = HashMap::new();
+    k1.insert(Data::Integer(12), Data::Float(1.2));
+    k2.insert(Data::Float(4.2), Data::Integer(42));
+
+    assert_eq!(
+        Some(&Data::Integer(33)),
+        h.get(&Data::Map(k1)));
+
+    assert_eq!(
+        Some(&Data::Integer(43)),
+        h.get(&Data::Map(k2)));
 }
