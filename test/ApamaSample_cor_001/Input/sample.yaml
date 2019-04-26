@@ -12,6 +12,9 @@ connectivityPlugins:
   diag:
     libraryName: DiagnosticCodec
     class: DiagnosticCodec
+  mapperCodec:
+    libraryName: MapperCodec
+    class: MapperCodec
 
 startChains:
   rustTransport:
@@ -23,8 +26,21 @@ startChains:
           - fromhost
         # ... and send them back to this channel
         defaultChannel: intohost
+        defaultEventType: apamax.rust.EchoMessage
+        allowMissing: true
 
-
+    - mapperCodec:
+        "*":
+          towardsTransport:
+            mapFrom:
+              - metadata.requestId: payload.id
+              - payload: payload.data
+          towardsHost:
+            mapFrom:
+              - payload.data: payload
+              #- payload.id: metadata.requestId
+              #- metadata.temp.channel: metadata.sag.channel
+              #- metadata.temp.type: metadata.sag.type
     - diag: { tag: rusttransport }
     - rustTransport:
         k1: "v1"

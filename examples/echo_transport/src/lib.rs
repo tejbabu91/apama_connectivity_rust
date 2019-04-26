@@ -19,7 +19,11 @@ impl Transport for EchoTransport {
     fn deliverMessageTowardsTransport(&self, msg: Message) {
         println!("EchoTransport received message from host: {:?}", msg);
         // echo message back towards host
-        self.getHostSide().sendMessageTwoardsHost(msg);
+        let m = Message{
+            payload: Data::String(format!("Sending back {}", msg.payload)),
+            metadata: msg.metadata,
+        };
+        self.getHostSide().sendMessageTwoardsHost(m);
     }
     fn getHostSide(&self) -> HostSide {
         self.hostside

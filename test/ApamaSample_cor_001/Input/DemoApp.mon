@@ -2,7 +2,7 @@
  * $Copyright (c) 2019 Software AG, Darmstadt, Germany and/or Software AG USA Inc., Reston, VA, USA, and/or its subsidiaries and/or its affiliates and/or their licensors.$ 
  * Use, reproduction, transfer, publication or disclosure is prohibited except as specifically provided for in your License Agreement with Software AG 
  */
-package apamax.golang;
+package apamax.rust;
 
 using com.softwareag.connectivity.ConnectivityPlugins;
 
@@ -23,7 +23,7 @@ monitor RustTransportSample
 
 		// signal that we are ready to receive events
 		ConnectivityPlugins.onApplicationInitialized();
-		string data := "Hello to Go from Apama";
+		string data := "Hello to Rust from Apama";
 		simpleRequest(data);
 	}
 	action simpleRequest(string data) {
