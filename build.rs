@@ -1,6 +1,6 @@
 fn main() {
     println!("cargo:rustc-link-search=/Projects/stack-overflow/using-c-static/");
-    let apama_home = std::env::var("APAMA_HOME").unwrap();
+    let apama_home = std::env::var("APAMA_HOME").expect("Should be run from Apama shell (APAMA_HOME env not set).");
     cc::Build::new()
         .cpp(true)
         .file("RustTransport.cpp")
