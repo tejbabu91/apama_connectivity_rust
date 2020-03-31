@@ -41,7 +41,7 @@ class PySysTest(ApamaBaseTest):
 	def validate(self):
 		# look for the log statements in the correlator log file
 		self.assertLineCount(file='mycorrelator.log', expr='<connectivity\.diag\.rustTransport> (.*) Towards Host:', condition='==1')
-		self.assertLineCount(file='mycorrelator.log', expr='apamax.rust.RustTransportSample .* Got echo response apamax.rust.EchoMessage.*Hello to Rust from Apama', consdition='==1')
+		self.assertLineCount(file='mycorrelator.log', expr='apamax.rust.RustTransportSample .* Got echo response apamax.rust.EchoMessage.*Hello to Rust from Apama', condition='==1')
 		self.assertLineCount(file='mycorrelator.out', expr='EchoTransport received message from host.*Hello to Rust from Apama', condition='==1')
 	
 	def copytree(self,src, dst, symlinks=False, ignore=None):
