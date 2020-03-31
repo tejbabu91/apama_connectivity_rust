@@ -8,6 +8,5 @@ edition = "2018"
 rust_ap_connectivity = {path = "../../"}
 
 [lib]
-#name = "echo_transport"
 crate-type = ["dylib"]
 

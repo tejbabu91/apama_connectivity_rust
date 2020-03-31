@@ -37,5 +37,7 @@ public:
 	virtual void hostReady();
 };
 
+SAG_DECLARE_CONNECTIVITY_TRANSPORT_CLASS(RustTransport)
+
 }} // apamax.golang
 #endif

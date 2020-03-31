@@ -19,8 +19,12 @@ impl Transport for EchoTransport {
     fn deliverMessageTowardsTransport(&self, msg: Message) {
         println!("EchoTransport received message from host: {:?}", msg);
         // echo message back towards host
+        let mut m = HashMap::new();
+        m.insert(Data::String("name".to_string()), Data::String("value".to_string()));
+        m.insert(Data::Integer(35), Data::List(vec![Data::String(format!("Sending back {}", msg.payload)), Data::Boolean(true)]));
         let m = Message{
-            payload: Data::String(format!("Sending back {}", msg.payload)),
+            // payload: Data::String(format!("Sending back {}", msg.payload)),
+            payload: Data::Map(m),
             metadata: msg.metadata,
         };
         self.getHostSide().sendMessageTwoardsHost(m);
@@ -28,10 +32,7 @@ impl Transport for EchoTransport {
     fn getHostSide(&self) -> HostSide {
         self.hostside
     }
-}
-
-impl EchoTransport {
-    pub fn new(h: HostSide, config: HashMap<Data,Data>) -> Box<Transport> {
+    fn new(h: HostSide, config: HashMap<Data,Data>) -> Box<dyn Transport> {
         println!("Creating transport with config {:?}", config);
         Box::new(EchoTransport{data: 43, hostside: h})
     }

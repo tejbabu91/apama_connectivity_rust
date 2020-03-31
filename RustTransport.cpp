@@ -74,8 +74,8 @@ namespace rust {
 	void RustTransport::hostReady() {
 		rust_transport_hostReady(rustTransport);
 	}
-/** Export this transport */
-SAG_DECLARE_CONNECTIVITY_TRANSPORT_CLASS(RustTransport)
+
+	
 
 }} // apamax.rust
 
@@ -83,4 +83,55 @@ SAG_DECLARE_CONNECTIVITY_TRANSPORT_CLASS(RustTransport)
 void rust_send_msg_towards_host(void* ptr, sag_underlying_message_t* msg) {
 	apamax::rust::RustTransport* t = reinterpret_cast<apamax::rust::RustTransport*>(ptr);
 	t->towardsHost(reinterpret_cast<Message*>(msg));
+}
+
+
+sag_underlying_data_t* create_cpp_data_t_empty() {
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t());
+}
+
+sag_underlying_data_t* create_cpp_data_t_bool(bool val) {
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(val));
+}
+
+sag_underlying_data_t* create_cpp_data_t_int64(int64_t val) {
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(val));
+}
+
+sag_underlying_data_t* create_cpp_data_t_double(double val) {
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(val));
+}
+
+sag_underlying_vector_t* create_cpp_list_t_with_capacity(int64_t capacity) {
+	return reinterpret_cast<sag_underlying_vector_t*>(new list_t(capacity));
+}
+
+void append_to_list_t(sag_underlying_vector_t *l, sag_underlying_data_t *d) {
+	list_t *l_class = reinterpret_cast<list_t *>(l);
+	data_t *d_class = reinterpret_cast<data_t *>(d);
+	l_class->push_back(std::move(*d_class));
+	delete d_class;
+}
+
+sag_underlying_data_t* create_cpp_data_t_list_t(sag_underlying_vector_t *val) {
+	list_t *l_class = reinterpret_cast<list_t *>(val);
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(std::move(*l_class)));
+}
+
+sag_underlying_map_t* create_cpp_map_t() {
+	return reinterpret_cast<sag_underlying_map_t*>(new map_t());
+}
+
+void insert_into_map_t(sag_underlying_map_t *m, sag_underlying_data_t *key, sag_underlying_data_t *value) {
+	map_t *m_class = reinterpret_cast<map_t *>(m);
+	data_t *key_class = reinterpret_cast<data_t *>(key);
+	data_t *value_class = reinterpret_cast<data_t *>(value);
+	m_class->insert(std::move(*key_class), std::move(*value_class));
+	delete key_class;
+	delete value_class;
+}
+
+sag_underlying_data_t* create_cpp_data_t_map_t(sag_underlying_map_t *val) {
+	map_t *m_class = reinterpret_cast<map_t *>(val);
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(std::move(*m_class)));
 }

@@ -4,9 +4,10 @@ version = "0.1.0"
 authors = ["Gyan <gys@softwareag.com>", "Tej Babu Balireddi <tejbabu.balireddi@softwareag.com"]
 edition = "2018"
 build = "build.rs"
+links = "cpplayer"
 
 [dependencies]
-libc = "0.2.51"
+libc = "0.2.68"
 
 [build-dependencies]
-cc = "1.0"
+cc = "1.0.50"
