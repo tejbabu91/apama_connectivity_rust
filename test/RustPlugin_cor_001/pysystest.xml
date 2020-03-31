@@ -2,12 +2,8 @@
 <pysystest type="auto" state="runnable">
     
   <description> 
-    <title>Monitorscript injection and execution, sending events from process stdin</title>    
+    <title>Rust connectivity transport - echoing simple messages</title>    
     <purpose><![CDATA[
-Demonstrates sending events into a Correlator with a loaded monitorscript application by 
-writing to the stdin of an engine_send process started in the background. This shows how 
-events can be sent to the Correlator directly within the testcase class as opposed to 
-sending via an event file.
 ]]>
     </purpose>
   </description>
