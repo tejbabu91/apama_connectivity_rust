@@ -14,6 +14,11 @@ event EchoMessage
 	string data;
 }
 
+@com.softwareag.connectivity.ExtraFieldsDict("params")
+event EchoResponse {
+	dictionary<any,any> params;
+}
+
 monitor RustTransportSample
 {
 	action onload()
@@ -28,7 +33,7 @@ monitor RustTransportSample
 	}
 	action simpleRequest(string data) {
 		integer id := integer.getUnique();
-		on EchoMessage() as resp {
+		on EchoResponse() as resp {
 			log "Got echo response "+resp.toString() at INFO;
 		}
 		send EchoMessage(id, data) to "fromhost";

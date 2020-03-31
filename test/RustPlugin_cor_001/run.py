@@ -24,7 +24,7 @@ class PySysTest(ApamaBaseTest):
 
 		# create the correlator helper and start the correlator and an 
 		# engine receive listening on the Echo Channel
-		correlator = CorrelatorHelper(self, name='mycorrelator')
+		correlator = CorrelatorHelper(self, name='mycorrelator', port=15309)
 		correlator.start(logfile='mycorrelator.log', inputLog='mycorrelator.input.log',config=[self.output+'/sample.yaml'])
 		correlator.injectEPL(['ConnectivityPluginsControl.mon', 'ConnectivityPlugins.mon'], filedir=PROJECT.APAMA_HOME+'/monitors')
 		correlator.receive(filename='receive.evt', channels=['EchoChannel'])
@@ -41,7 +41,7 @@ class PySysTest(ApamaBaseTest):
 	def validate(self):
 		# look for the log statements in the correlator log file
 		self.assertLineCount(file='mycorrelator.log', expr='<connectivity\.diag\.rustTransport> (.*) Towards Host:', condition='==1')
-		self.assertLineCount(file='mycorrelator.log', expr='apamax.rust.RustTransportSample .* Got echo response apamax.rust.EchoMessage.*Hello to Rust from Apama', condition='==1')
+		self.assertLineCount(file='mycorrelator.log', expr='apamax.rust.RustTransportSample .* Got echo response apamax.rust.EchoResponse.*Hello to Rust from Apama', condition='==1')
 		self.assertLineCount(file='mycorrelator.out', expr='EchoTransport received message from host.*Hello to Rust from Apama', condition='==1')
 	
 	def copytree(self,src, dst, symlinks=False, ignore=None):
