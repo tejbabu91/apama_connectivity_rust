@@ -8,6 +8,7 @@ links = "cpplayer"
 
 [dependencies]
 libc = "0.2.68"
+paste = "0.1.9"
 
 [build-dependencies]
 cc = "1.0.50"

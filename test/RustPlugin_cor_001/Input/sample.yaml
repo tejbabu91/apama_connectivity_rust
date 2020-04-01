@@ -5,7 +5,7 @@ connectivityPlugins:
   rustTransport:
     directory: ${PARENT_DIR}/Release
     libraryName: echo_transport
-    class: RustTransport
+    class: EchoTransport
   stringCodec:
     libraryName: connectivity-string-codec
     class: StringCodec

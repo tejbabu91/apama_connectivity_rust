@@ -18,21 +18,38 @@ use std::ptr;
 
 pub enum CppOwner {}
 
-// Copy should be cheap as it contains only c++ pointer.
+
 #[derive(Copy, Clone)]
-pub struct HostSide {
-    pub owner: *mut CppOwner,
+pub struct RemoteHostSide {
+    pub host_plugin: sag_plugin_t,
+    pub send_fn: sag_send_fn_t
 }
+
+
+pub struct HostSide {
+    pub host: std::cell::RefCell<RemoteHostSide>
+}
+
 impl HostSide {
     pub fn sendMessageTwoardsHost(&self, msg: Message) {
-        println!("Called sendMessageTwoardsHost: {:?}", msg);
-        let m = rust_to_c_msg(&msg);
+        let host = self.host.borrow();
         unsafe {
-            rust_send_msg_towards_host(self.owner, m);
+            let m = rust_to_c_msg(&msg);
+            host.send_fn.unwrap()(host.host_plugin.clone(), m, m.offset(1));
+            // TODO: Do we need to manually free the 'm' here?
         }
     }
-    pub fn new(owner: *mut CppOwner) -> HostSide {
-        HostSide { owner }
+    pub fn new() -> HostSide {
+        HostSide { host: std::cell::RefCell::new(RemoteHostSide { host_plugin: sag_plugin_t{r#plugin: std::ptr::null_mut()}, send_fn:Option::None}) }
+    }
+
+    pub fn update(&self, host_plugin: sag_plugin_t, send_fn: sag_send_fn_t) {
+        let mut host = self.host.borrow_mut();
+
+        host.host_plugin = host_plugin;
+        host.send_fn = send_fn;
+
+        println!("GYS: updated host side");
     }
 }
 
@@ -41,7 +58,7 @@ pub trait Transport {
     fn shutdown(&self);
     fn hostReady(&self);
     fn deliverMessageTowardsTransport(&self, msg: Message);
-    fn getHostSide(&self) -> HostSide;
+    fn getHostSide(&self) -> &HostSide;
     fn new(h: HostSide, config: HashMap<Data, Data>) -> Box<dyn Transport>
     where
         Self: Sized;
@@ -120,6 +137,7 @@ pub extern "C" fn rust_transport_shutdown(t: *mut WrappedTransport) {
 
 #[no_mangle]
 pub extern "C" fn rust_transport_hostReady(t: *mut WrappedTransport) {
+    println!("GYS: handling host ready for wrapped transport");
     unsafe {
         (*((*t).transport)).hostReady();
     }
