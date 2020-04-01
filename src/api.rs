@@ -18,23 +18,41 @@ use std::ptr;
 
 pub enum CppOwner {}
 
-// Copy should be cheap as it contains only c++ pointer.
+
 #[derive(Copy, Clone)]
-pub struct HostSide {
-    pub owner: *mut CppOwner,
+pub struct RemoteHostSide {
+    pub host_plugin: sag_plugin_t,
+    pub send_fn: sag_send_fn_t
 }
+
+
+pub struct HostSide {
+    pub host: std::cell::RefCell<RemoteHostSide>
+}
+
 impl HostSide {
     pub fn sendMessageTwoardsHost(&self, msg: Message) {
-        println!("Called sendMessageTwoardsHost: {:?}", msg);
-        // let m = rust_to_c_msg(&msg);
-        // let mb = Box::into_raw(Box::new(m));
-        // unsafe {
-        //     rust_send_msg_towards_host(self.owner, mb);
-        //     let _ = Box::from_raw(mb);
-        // }
+        println!("GYS: Called sendMessageTwoardsHost: {:?}", msg);
+        let host = self.host.borrow();
+        unsafe {
+            let m = rust_to_c_msg(&msg);
+            let mb = Box::into_raw(Box::new(m));
+
+            host.send_fn.unwrap()(host.host_plugin.clone(), mb, mb.offset(1)); 
+
+        }
     }
-    pub fn new(owner: *mut CppOwner) -> HostSide {
-        HostSide { owner }
+    pub fn new() -> HostSide {
+        HostSide { host: std::cell::RefCell::new(RemoteHostSide { host_plugin: sag_plugin_t{r#plugin: std::ptr::null_mut()}, send_fn:Option::None}) }
+    }
+
+    pub fn update(&self, host_plugin: sag_plugin_t, send_fn: sag_send_fn_t) {
+        let mut host = self.host.borrow_mut();
+
+        host.host_plugin = host_plugin;
+        host.send_fn = send_fn;
+
+        println!("GYS: updated host side");
     }
 }
 
@@ -43,7 +61,7 @@ pub trait Transport {
     fn shutdown(&self);
     fn hostReady(&self);
     fn deliverMessageTowardsTransport(&self, msg: Message);
-    fn getHostSide(&self) -> HostSide;
+    fn getHostSide(&self) -> &HostSide;
     fn new(h: HostSide, config: HashMap<Data,Data>) -> Box<dyn Transport> where Self: Sized;
 }
 

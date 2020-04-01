@@ -1,9 +1,8 @@
+#![allow(dead_code)]
 pub mod api;
 
 pub use crate::api::*;
 
-
-use paste;
 
 // sag_is_host_shutting_down from c_functions.hpp was commented out because of using reference parameters
 // default parameter value was removed from sag_copy_custom in c_functions.hpp
@@ -12,26 +11,22 @@ pub struct MyTestTransport {
     data: i64
 }
 
-pub extern fn sag_plugin_sendBatchTowardsTransport_MyTestTransport(plug: ctypes::sag_plugin_t, start: *mut ctypes::sag_underlying_message_t, end: *mut ctypes::sag_underlying_message_t,) -> ctypes::sag_error_t {
-    println!("GYS: sag_plugin_sendBatchTowardsTransport_MyNewTestTransport");
-    let mut i  = 0;
-    loop {
-        unsafe {
-            let p = start.offset(i);
-            if (p == end) {
-                break;
-            }
-            rust_send_msg_towards_transport(plug.r#plugin as *mut WrappedTransport, p);
-        }
-        i += 1;
+pub extern fn sag_plugin_setNextTowardsHost_MyTestTransport(p: ctypes::sag_plugin_t, q: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t)  -> ctypes::sag_error_t {
+    println!("GYS: sag_plugin_setNextTowardsHost_MyNewTestTransport - start");
+
+    unsafe {
+        let mut wt = p.r#plugin as *mut WrappedTransport;
+        let mut  host = (*((*wt).transport)).getHostSide();
+        host.update(q, send_fn);
     }
-    // TODO - what do I need to implement here.
+    println!("GYS: sag_plugin_setNextTowardsHost_MyNewTestTransport - end");
     ctypes::sag_error_t_SAG_ERROR_OK
 }
 
 #[macro_export]
 macro_rules! DEFINE_RUST_TRANSPORT {
     ($elem:ident) => {
+        use paste;
         paste::item! {
             #[no_mangle]
             pub extern fn [<sag_plugin_api_version_$elem>](p: rust_ap_connectivity::api::ctypes::sag_plugin_t) -> ctypes::__uint64_t {
@@ -42,7 +37,7 @@ macro_rules! DEFINE_RUST_TRANSPORT {
             pub extern fn [<sag_create_plugin_with_params_$elem>](name : *const ::std::os::raw::c_char, chainId: *const ::std::os::raw::c_char, config: rust_ap_connectivity::api::ctypes::sag_underlying_data_t, _connectivityManager: *mut libc::c_void, _reserved: *mut libc::c_void) -> ctypes::sag_plugin_t {
                 println!("GYS: sag_create_plugin_with_params_MyNewTestTransport - start");
                 // let t = Box::new(MyTestTransport{data: 42});
-                let t = $elem::new(HostSide::new(std::ptr::null_mut()), std::collections::HashMap::new());
+                let t = $elem::new(HostSide::new(), std::collections::HashMap::new());
                 // TODO: We are leaking the transport object at the moment as
                 // we are not doing manual cleanup of raw pointers in the C++
                 // destructor.
@@ -99,9 +94,15 @@ macro_rules! DEFINE_RUST_TRANSPORT {
                 rust_ap_connectivity::api::ctypes::sag_error_t_SAG_ERROR_OK
             }
             #[no_mangle]
-            pub extern fn [<sag_plugin_setNextTowardsHost_$elem>](p: rust_ap_connectivity::api::ctypes::sag_plugin_t, q: rust_ap_connectivity::api::ctypes::sag_plugin_t, send_fn: rust_ap_connectivity::api::ctypes::sag_set_next_fn_t)  -> rust_ap_connectivity::api::ctypes::sag_error_t {
-                println!("GYS: sag_plugin_setNextTowardsHost_MyNewTestTransport");
-                // TODO - what do I need to implement here.
+            pub extern fn [<sag_plugin_setNextTowardsHost_$elem>](p: rust_ap_connectivity::api::ctypes::sag_plugin_t, q: rust_ap_connectivity::api::ctypes::sag_plugin_t, send_fn: rust_ap_connectivity::api::ctypes::sag_send_fn_t)  -> rust_ap_connectivity::api::ctypes::sag_error_t {
+                println!("GYS: sag_plugin_setNextTowardsHost_MyNewTestTransport - start");
+
+                unsafe {
+                    let mut wt = p.r#plugin as *mut WrappedTransport;
+                    let mut  host = (*((*wt).transport)).getHostSide();
+                    host.update(q, send_fn);
+                }
+                println!("GYS: sag_plugin_setNextTowardsHost_MyNewTestTransport - end");
                 rust_ap_connectivity::api::ctypes::sag_error_t_SAG_ERROR_OK
             }
 
@@ -111,12 +112,11 @@ macro_rules! DEFINE_RUST_TRANSPORT {
                 unsafe {
                     let mut i  = 0;
                     loop {
-                        
-                            let p = start.offset(i);
-                            if (p == end) {
-                                break;
-                            }
-                            rust_send_msg_towards_transport(plug.r#plugin as *mut WrappedTransport, p);
+                        let p = start.offset(i);
+                        if (p == end) {
+                            break;
+                        }
+                        rust_send_msg_towards_transport(plug.r#plugin as *mut WrappedTransport, p);
                         
                         i += 1;
                     }
@@ -141,7 +141,7 @@ macro_rules! DefineTransport {
                 Some(v) => c_to_rust_map(&*v),
                 None    => HashMap::<Data,Data>::new()
             };
-            let t = $elem::new(HostSide::new(owner), config);
+            let t = $elem::new(HostSide::new(), config);
             // TODO: We are leaking the transport object at the moment as
             // we are not doing manual cleanup of raw pointers in the C++
             // destructor.

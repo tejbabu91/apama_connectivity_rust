@@ -29,15 +29,14 @@ impl Transport for EchoTransport {
         };
         self.getHostSide().sendMessageTwoardsHost(m);
     }
-    fn getHostSide(&self) -> HostSide {
-        self.hostside
+    fn getHostSide(&self) -> &HostSide {
+        &self.hostside
     }
     fn new(h: HostSide, config: HashMap<Data,Data>) -> Box<dyn Transport> {
         println!("Creating transport with config {:?}", config);
         Box::new(EchoTransport{data: 43, hostside: h})
     }
 }
-
 DEFINE_RUST_TRANSPORT!(EchoTransport);
 DefineTransport!(EchoTransport);
 
