@@ -37,8 +37,7 @@ impl Transport for EchoTransport {
         Box::new(EchoTransport{data: 43, hostside: h})
     }
 }
-DEFINE_RUST_TRANSPORT!(EchoTransport);
-DefineTransport!(EchoTransport);
+DECLARE_CONNECTIVITY_TRANSPORT!(EchoTransport);
 
 #[cfg(test)]
 mod tests {
