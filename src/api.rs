@@ -214,7 +214,7 @@ pub mod data_conversion {
     pub fn c_to_rust_msg(t: &sag_underlying_message_t) -> Message {
         Message {
             payload: c_to_rust_data(&t.payload),
-            metadata: HashMap::new(),
+            metadata: c_to_rust_map(&t.metadata),
         }
     }
     pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
