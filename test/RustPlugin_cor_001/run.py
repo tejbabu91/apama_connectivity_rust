@@ -9,7 +9,7 @@ from apama.correlator import CorrelatorHelper
 class PySysTest(ApamaBaseTest):
 
 	def execute(self):
-		correlator = CorrelatorHelper(self, name='mycorrelator', port=15309)
+		correlator = CorrelatorHelper(self, name='mycorrelator')
 		correlator.start(logfile='mycorrelator.log', config=[self.input+'/sample.yaml'], 
 			configPropertyOverrides={'TEST_TRANSPORT_DIR':self.project.TEST_TRANSPORT_DIR})
 		correlator.injectEPL(['ConnectivityPluginsControl.mon', 'ConnectivityPlugins.mon'], filedir=PROJECT.APAMA_HOME+'/monitors')
