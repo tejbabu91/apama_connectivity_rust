@@ -33,8 +33,8 @@ monitor RustTransportSample
 	}
 	action simpleRequest(string data) {
 		integer id := integer.getUnique();
-		on EchoResponse() as resp {
-			log "Got echo response "+resp.toString() at INFO;
+		on all EchoResponse() as resp {
+			log "Got echo response: "+resp.toString() at INFO;
 		}
 		send EchoMessage(id, data) to "fromhost";
 		log "Sent: " + EchoMessage(id, data).toString();

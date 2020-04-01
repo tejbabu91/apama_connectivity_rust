@@ -25,24 +25,22 @@ class PySysTest(ApamaBaseTest):
 		# create the correlator helper and start the correlator and an 
 		# engine receive listening on the Echo Channel
 		correlator = CorrelatorHelper(self, name='mycorrelator', port=15309)
-		correlator.start(logfile='mycorrelator.log', inputLog='mycorrelator.input.log',config=[self.output+'/sample.yaml'])
+		correlator.start(logfile='mycorrelator.log', config=[self.output+'/sample.yaml'])
 		correlator.injectEPL(['ConnectivityPluginsControl.mon', 'ConnectivityPlugins.mon'], filedir=PROJECT.APAMA_HOME+'/monitors')
 		correlator.receive(filename='receive.evt', channels=['EchoChannel'])
 
 		# inject the simple monitor into the correlator
 		correlator.injectEPL(filenames=[self.input+'/DemoApp.mon'])
-		#self.wait(3)
 
-		# wait for receipt msg towards transport
-		# we could use correlator.flush() here instead
-		self.waitForSignal('mycorrelator.log', expr="Towards Host:",condition="==1")
+		self.waitForSignal('mycorrelator.log', expr="Got echo response", process=correlator, 
+			errorExpr=[' ERROR ', ' FATAL ', 'Failed to parse event'])
 
 		
 	def validate(self):
 		# look for the log statements in the correlator log file
-		self.assertLineCount(file='mycorrelator.log', expr='<connectivity\.diag\.rustTransport> (.*) Towards Host:', condition='==1')
-		self.assertLineCount(file='mycorrelator.log', expr='apamax.rust.RustTransportSample .* Got echo response apamax.rust.EchoResponse.*Hello to Rust from Apama', condition='==1')
-		self.assertLineCount(file='mycorrelator.out', expr='EchoTransport received message from host.*Hello to Rust from Apama', condition='==1')
+		self.assertGrep('mycorrelator.log', expr='<connectivity\.diag\.rustTransport> (.*) Towards Host:')
+		self.assertGrep('mycorrelator.log', expr='apamax.rust.RustTransportSample .* Got echo response: apamax.rust.EchoResponse.*Hello to Rust from Apama')
+		self.assertGrep('mycorrelator.out', expr='EchoTransport received message from host.*Hello to Rust from Apama')
 	
 	def copytree(self,src, dst, symlinks=False, ignore=None):
 		for item in os.listdir(src):
