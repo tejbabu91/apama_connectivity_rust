@@ -1,5 +1,6 @@
 fn main() {
-    let apama_home = std::env::var("APAMA_HOME").expect("Should be run from Apama shell (APAMA_HOME env not set).");
+    let apama_home = std::env::var("APAMA_HOME")
+        .expect("Should be run from Apama shell (APAMA_HOME env not set).");
     cc::Build::new()
         .cpp(true)
         .file("./src/RustInterface.cpp")

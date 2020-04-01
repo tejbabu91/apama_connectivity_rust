@@ -1,13 +1,16 @@
-#![allow(dead_code)]
 pub mod api;
+// export things in public_api modules only
+pub use crate::api::public_api::*;
+// re-export for the user crate
+pub use libc;
+pub use paste;
 
-pub use crate::api::public_api::*; // export things in public_api modules only
-pub use paste; // re-export for the user crate
-pub use libc; // re-export for the user crate
-
-
-// sag_is_host_shutting_down from c_functions.hpp was commented out because of using reference parameters
-// default parameter value was removed from sag_copy_custom in c_functions.hpp
+/*
+The bindgen tool was run on sag_connectivity_c.h file and the output was saved in the api/ctypes.rs file.
+Few changes were made to the c_functions.hpp header file to make bidngen work:
+    - The sag_is_host_shutting_down functions was commented out because of it using reference parameter which is not valid C.
+    - Default parameter value was removed from sag_copy_custom function because it is not valid C.
+*/
 
 #[macro_export]
 macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
@@ -33,7 +36,7 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
             pub extern fn [<sag_destroy_plugin_$elem>](p: ctypes::sag_plugin_t) -> ctypes::sag_error_t {
                 rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_destroy_impl(&p)
             }
-            
+
             #[no_mangle]
             pub extern fn [<sag_plugin_start_$elem>](p: ctypes::sag_plugin_t) -> ctypes::sag_error_t {
                 rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_start_impl(&p)
