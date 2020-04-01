@@ -23,7 +23,7 @@ impl Transport for EchoTransport {
         m.insert(Data::String("str".to_string()), Data::String("Hello from Rust!".to_string()));
         m.insert(Data::String("name".to_string()), Data::String("value".to_string()));
         m.insert(Data::Integer(35), Data::List(vec![Data::String(format!("Sending back {}", msg.payload)), Data::Boolean(true)]));
-        let m = Message{
+        let m = Message {
             // payload: Data::String(format!("Sending back {}", msg.payload)),
             payload: Data::Map(m),
             metadata: msg.metadata,
@@ -39,11 +39,3 @@ impl Transport for EchoTransport {
     }
 }
 DECLARE_CONNECTIVITY_TRANSPORT!(EchoTransport);
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

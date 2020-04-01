@@ -6,8 +6,6 @@ edition = "2018"
 
 [dependencies]
 rust_ap_connectivity = {path = "../../"}
-paste = "0.1.9"
-libc = "0.2.68"
 
 [lib]
 crate-type = ["dylib"]
