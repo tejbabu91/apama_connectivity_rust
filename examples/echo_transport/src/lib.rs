@@ -20,6 +20,7 @@ impl Transport for EchoTransport {
         println!("EchoTransport received message from host: {:?}", msg);
         // echo message back towards host
         let mut m = HashMap::new();
+        m.insert(Data::String("str".to_string()), Data::String("Hello from Rust!".to_string()));
         m.insert(Data::String("name".to_string()), Data::String("value".to_string()));
         m.insert(Data::Integer(35), Data::List(vec![Data::String(format!("Sending back {}", msg.payload)), Data::Boolean(true)]));
         let m = Message{

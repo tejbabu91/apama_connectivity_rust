@@ -35,9 +35,9 @@ startChains:
             mapFrom:
               - metadata.requestId: payload.id
               - payload: payload.data
-          towardsHost:
-            mapFrom:
-              - payload.data: payload
+          #towardsHost:
+            #mapFrom:
+              #- payload.data: payload
               #- payload.id: metadata.requestId
               #- metadata.temp.channel: metadata.sag.channel
               #- metadata.temp.type: metadata.sag.type

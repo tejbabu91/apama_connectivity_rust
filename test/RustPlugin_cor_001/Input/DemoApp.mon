@@ -16,6 +16,7 @@ event EchoMessage
 
 @com.softwareag.connectivity.ExtraFieldsDict("params")
 event EchoResponse {
+	string str;
 	dictionary<any,any> params;
 }
 
