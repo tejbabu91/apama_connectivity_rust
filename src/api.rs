@@ -26,12 +26,12 @@ pub struct HostSide {
 impl HostSide {
     pub fn sendMessageTwoardsHost(&self, msg: Message) {
         println!("Called sendMessageTwoardsHost: {:?}", msg);
-        let m = rust_to_c_msg(&msg);
-        let mb = Box::into_raw(Box::new(m));
-        unsafe {
-            rust_send_msg_towards_host(self.owner, mb);
-            let _ = Box::from_raw(mb);
-        }
+        // let m = rust_to_c_msg(&msg);
+        // let mb = Box::into_raw(Box::new(m));
+        // unsafe {
+        //     rust_send_msg_towards_host(self.owner, mb);
+        //     let _ = Box::from_raw(mb);
+        // }
     }
     pub fn new(owner: *mut CppOwner) -> HostSide {
         HostSide { owner }
@@ -120,6 +120,7 @@ pub extern "C" fn rust_transport_shutdown(t: *mut WrappedTransport) {
 
 #[no_mangle]
 pub extern "C" fn rust_transport_hostReady(t: *mut WrappedTransport) {
+    println!("GYS: handling host ready for wrapped transport");
     unsafe {
         (*((*t).transport)).hostReady();
     }

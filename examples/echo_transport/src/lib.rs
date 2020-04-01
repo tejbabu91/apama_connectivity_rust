@@ -38,6 +38,7 @@ impl Transport for EchoTransport {
     }
 }
 
+DEFINE_RUST_TRANSPORT!(EchoTransport);
 DefineTransport!(EchoTransport);
 
 #[cfg(test)]
