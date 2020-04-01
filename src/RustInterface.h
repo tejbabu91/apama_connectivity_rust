@@ -1,3 +1,8 @@
+/*
+ * $Copyright (c) 2019-2020 Software AG, Darmstadt, Germany and/or Software AG USA Inc., Reston, VA, USA, and/or its subsidiaries and/or its affiliates and/or their licensors.$
+ * Use, reproduction, transfer, publication or disclosure is prohibited except as specifically provided for in your License Agreement with Software AG
+ * $Revision: 321386 $ $Date: 2017-12-14 10:26:04 +0000 (Thu, 14 Dec 2017) $
+ */
 #ifndef _RUST_CPP_INTERFACE_H_
 #define _RUST_CPP_INTERFACE_H_
 
