@@ -102,6 +102,18 @@ sag_underlying_data_t* create_cpp_data_t_double(double val) {
 	return reinterpret_cast<sag_underlying_data_t*>(new data_t(val));
 }
 
+sag_underlying_data_t* create_cpp_data_t_string(const char* s) {
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(s));
+}
+
+sag_underlying_data_t* create_cpp_data_t_buffer(const uint8_t* buf, size_t size) {
+	buffer_t b(size);
+	for(size_t i=0;i<size;i++) {
+		b[i] = buf[i];
+	}
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(std::move(b)));
+}
+
 sag_underlying_vector_t* create_cpp_list_t_with_capacity(int64_t capacity) {
 	return reinterpret_cast<sag_underlying_vector_t*>(new list_t(capacity));
 }
@@ -134,4 +146,13 @@ void insert_into_map_t(sag_underlying_map_t *m, sag_underlying_data_t *key, sag_
 sag_underlying_data_t* create_cpp_data_t_map_t(sag_underlying_map_t *val) {
 	map_t *m_class = reinterpret_cast<map_t *>(val);
 	return reinterpret_cast<sag_underlying_data_t*>(new data_t(std::move(*m_class)));
+}
+
+sag_underlying_message_t* create_cpp_message_t(sag_underlying_data_t *payload, sag_underlying_map_t *metadata) {
+	data_t *d = reinterpret_cast<data_t*>(payload);
+	map_t *m = reinterpret_cast<map_t*>(metadata);
+	auto retval = reinterpret_cast<sag_underlying_message_t*>(new Message(std::move(*d), std::move(*m)));
+	delete d;
+	delete m;
+	return retval;
 }
