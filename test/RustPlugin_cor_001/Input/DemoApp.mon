@@ -33,7 +33,7 @@ monitor RustTransportSample
 		simpleRequest(data);
 	}
 	action simpleRequest(string data) {
-		integer id := integer.getUnique();
+		integer id := integer.incrementCounter("rustEchoTransport");
 		on all EchoResponse() as resp {
 			log "Got echo response: "+resp.toString() at INFO;
 		}
