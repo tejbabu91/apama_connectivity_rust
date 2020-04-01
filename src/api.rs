@@ -81,6 +81,8 @@ pub enum Data {
     None,
 }
 
+// TODO: this seems weird - if (?) we think we should implement Display, we shouldn't 
+// do it by just returning the Debug format (using ?), that's just misleading 
 impl fmt::Display for Data {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -99,7 +101,7 @@ impl Hash for Data {
             Buffer(v) => v.hash(state),
             Float(v) => v.to_bits().hash(state),
             // Map gets 0 hashcode - inefficient but should produce correct values
-            _ => 0.hash(state),
+            _ => 0.hash(state), // TODO: use of _ like this is unsafe, we should be explicit
         };
     }
 }
