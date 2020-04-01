@@ -44,7 +44,7 @@ startChains:
               #- metadata.temp.type: metadata.sag.type
     - diag: { tag: rusttransport }
     - rustTransport:
-        k1: "v1"
+        myConfigKey: "config string value"
         k2:
           - "l1"
           - "l2"
