@@ -1,20 +1,11 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
-#![allow(unused_imports)]
 #![allow(non_upper_case_globals)]
-#![allow(dead_code)]
-
-extern crate libc;
 
 pub mod ctypes;
 
-use ctypes::*;
-
-use std::ptr;
-
-
 pub mod public_api {
-    use std::fmt::{self, Debug, Display};
+    use std::fmt::{self, Debug};
     use std::collections::HashMap;
     use std::cmp::{Eq, PartialEq};
     use std::hash::{Hash, Hasher};
@@ -46,11 +37,8 @@ pub mod public_api {
     
         pub fn update(&self, host_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t) {
             let mut host = self.host.borrow_mut();
-    
             host.host_plugin = host_plugin;
-            host.send_fn = send_fn;
-    
-            println!("GYS: updated host side");
+            host.send_fn = send_fn;    
         }
     }
     
