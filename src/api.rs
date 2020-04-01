@@ -31,7 +31,7 @@ pub struct HostSide {
 }
 
 impl HostSide {
-    pub fn sendMessageTwoardsHost(&self, msg: Message) {
+    pub fn sendMessageTowardsHost(&self, msg: Message) {
         let host = self.host.borrow();
         unsafe {
             let m = rust_to_c_msg(&msg);

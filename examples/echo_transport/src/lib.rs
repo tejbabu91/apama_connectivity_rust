@@ -27,7 +27,7 @@ impl Transport for EchoTransport {
             payload: Data::Map(m),
             metadata: msg.metadata,
         };
-        self.getHostSide().sendMessageTwoardsHost(m);
+        self.getHostSide().sendMessageTowardsHost(m);
     }
     fn getHostSide(&self) -> &HostSide {
         &self.hostside
