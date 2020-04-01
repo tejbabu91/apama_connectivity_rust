@@ -110,50 +110,65 @@ pub struct Message {
     pub metadata: HashMap<Data, Data>,
 }
 
-#[no_mangle]
-pub extern "C" fn rust_send_msg_towards_transport(
-    t: *mut WrappedTransport,
-    m: *mut sag_underlying_message_t,
-) {
-    unsafe {
-        let msg = c_to_rust_msg(&*m);
-        (*((*t).transport)).deliverMessageTowardsTransport(msg);
+impl ctypes::sag_plugin_t {
+    fn transport(&self) -> &dyn Transport {
+        unsafe {
+            let wt = self.r#plugin as *mut WrappedTransport;
+            &*((*wt).transport)
+        }
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rust_transport_start(t: *mut WrappedTransport) {
-    unsafe {
-        (*((*t).transport)).start();
-    }
+pub fn rs_plugin_destroy_impl(_p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    // TODO: destroy
+    // unsafe {
+    //     // take ownership back so that rust can destroy it.
+    //     let bw = Box::from_raw(t);
+    //     let _bt = Box::from_raw(bw.transport);
+    // }
+    ctypes::sag_error_t_SAG_ERROR_OK
 }
 
-#[no_mangle]
-pub extern "C" fn rust_transport_shutdown(t: *mut WrappedTransport) {
-    unsafe {
-        (*((*t).transport)).shutdown();
-    }
+pub fn rs_plugin_start_impl(p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    p.transport().start();
+    ctypes::sag_error_t_SAG_ERROR_OK
 }
 
-#[no_mangle]
-pub extern "C" fn rust_transport_hostReady(t: *mut WrappedTransport) {
-    println!("GYS: handling host ready for wrapped transport");
-    unsafe {
-        (*((*t).transport)).hostReady();
-    }
+pub fn rs_plugin_shutdown_impl(p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    p.transport().shutdown();
+    ctypes::sag_error_t_SAG_ERROR_OK
 }
 
-#[no_mangle]
-pub extern "C" fn rust_transport_destroy(t: *mut WrappedTransport) {
-    unsafe {
-        // take ownership back so that rust can destroy it.
-        let bw = Box::from_raw(t);
-        let _bt = Box::from_raw(bw.transport);
-    }
+pub fn rs_plugin_hostReady_impl(p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    p.transport().hostReady();
+    ctypes::sag_error_t_SAG_ERROR_OK
 }
 
+pub fn rs_plugin_setNextTowardsHost_impl(this_plugin: &ctypes::sag_plugin_t, host_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t)  -> ctypes::sag_error_t {
+    let host = this_plugin.transport().getHostSide();
+    host.update(host_plugin, send_fn);
+    ctypes::sag_error_t_SAG_ERROR_OK
+}
+
+
+pub extern fn rs_plugin_sendBatchTowardsTransport_impl(plug: &ctypes::sag_plugin_t, start: *mut ctypes::sag_underlying_message_t, end: *mut ctypes::sag_underlying_message_t,) -> ctypes::sag_error_t {
+    unsafe {
+        let mut i  = 0;
+        loop {
+            let p = start.offset(i);
+            if p == end {
+                break;
+            }
+            let msg = c_to_rust_msg(&*p);
+            plug.transport().deliverMessageTowardsTransport(msg);
+            i += 1;
+        }
+    }
+    ctypes::sag_error_t_SAG_ERROR_OK
+}
+
+/** C++ functions to create C++ message object from Rust. */
 extern "C" {
-    fn rust_send_msg_towards_host(owner: *mut CppOwner, m: *mut sag_underlying_message_t);
     fn create_cpp_data_t_empty() -> *mut sag_underlying_data_t;
     fn create_cpp_data_t_bool(val: bool) -> *mut sag_underlying_data_t;
     fn create_cpp_data_t_int64(val: i64) -> *mut sag_underlying_data_t;
