@@ -13,6 +13,7 @@ pub mod public_api {
     use std::fmt;
     use std::hash::{Hash, Hasher};
 
+    #[derive(Debug)]
     pub struct TransportConstructorParameters {
         chainId: String,
         pluginName: String,
@@ -111,7 +112,7 @@ pub mod public_api {
         }
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum Data {
         Boolean(bool),
         Integer(i64),
@@ -121,6 +122,15 @@ pub mod public_api {
         Map(HashMap<Data, Data>),
         Buffer(Vec<u8>),
         None,
+    }
+
+    impl Data {
+        pub fn get_string(&self) -> Option<&String> {
+            match self {
+                Data::String(v) => Some(v),
+                _ => None,
+            }
+        }
     }
 
     // TODO: this seems weird - if (?) we think we should implement Display, we shouldn't

@@ -3,7 +3,7 @@ connectivityPlugins:
     libraryName: ClassifierCodec
     class: ClassifierCodec
   rustTransport:
-    directory: ${TEST_TRANSPORT_DIR}
+    directory: ${EXAMPLES_DIR}/echo_transport/target/${RUST_TARGET}
     libraryName: echo_transport
     class: EchoTransport
   stringCodec:

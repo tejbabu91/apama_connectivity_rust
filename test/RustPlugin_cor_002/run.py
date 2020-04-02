@@ -12,8 +12,8 @@ class PySysTest(ApamaBaseTest):
 		correlator = CorrelatorHelper(self, name='mycorrelator')
 		correlator.start(logfile='mycorrelator.log', config=[self.input+'/sample.yaml'], 
 			configPropertyOverrides={
-				'TEST_TRANSPORT_DIR':self.project.TEST_TRANSPORT_DIR,
-				'TEST_CODEC_DIR':f'{self.project.EXAMPLES_DIR}/diag_codec/target/{self.project.RUST_TARGET}'
+				'EXAMPLES_DIR':self.project.EXAMPLES_DIR,
+				'RUST_TARGET':self.project.RUST_TARGET
 			})
 		correlator.injectEPL(['ConnectivityPluginsControl.mon', 'ConnectivityPlugins.mon'], filedir=PROJECT.APAMA_HOME+'/monitors')
 		correlator.injectEPL(filenames=[self.input+'/DemoApp.mon'])

@@ -1,12 +1,17 @@
 connectivityPlugins:
+  classifierCodec:
+    libraryName: ClassifierCodec
+    class: ClassifierCodec
   rustTransport:
-    directory: ${EXAMPLES_DIR}/echo_transport/target/${RUST_TARGET}
-    libraryName: echo_transport
-    class: EchoTransport
+    directory: ${EXAMPLES_DIR}/websocket_server/target/${RUST_TARGET}
+    libraryName: websocket_server
+    class: WebSocketTransport
+  stringCodec:
+    libraryName: connectivity-string-codec
+    class: StringCodec
   diag:
-    directory: ${EXAMPLES_DIR}/diag_codec/target/${RUST_TARGET}
-    libraryName: diag_codec
-    class: DiagCodec
+    libraryName: DiagnosticCodec
+    class: DiagnosticCodec
   mapperCodec:
     libraryName: MapperCodec
     class: MapperCodec
@@ -23,18 +28,22 @@ startChains:
         defaultChannel: intohost
         defaultEventType: apamax.rust.EchoResponse
         allowMissing: true
-    - diag: { tag: Mapper }
+
     - mapperCodec:
         "*":
           towardsTransport:
             mapFrom:
               - metadata.requestId: payload.id
               - payload: payload.data
-          towardsHost:
-            mapFrom:
-              - metadata.typeTowardsTransport: metadata.sag.type
-
-    - diag: { tag: Transport }
+          #towardsHost:
+            #mapFrom:
+              #- payload.data: payload
+              #- payload.id: metadata.requestId
+              #- metadata.temp.channel: metadata.sag.channel
+              #- metadata.temp.type: metadata.sag.type
+    - diag: { tag: rusttransport }
     - rustTransport:
-        myConfigKey: "config string value"
+        host: "127.0.0.1"
+        port: "4999"
+
 
