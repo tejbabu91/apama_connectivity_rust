@@ -29,8 +29,13 @@ monitor RustTransportSample
 
 		// signal that we are ready to receive events
 		ConnectivityPlugins.onApplicationInitialized();
-		string data := "Hello to Rust from Apama";
-		simpleRequest(data);
+		//string data := "Hello to Rust from Apama";
+		//simpleRequest(data);
+
+		on all EchoMessage() as e {
+			log "Received: " + e.toString() at INFO;
+			send EchoMessage(e.id, "Received " + e.data) to "fromhost";
+		}
 	}
 	action simpleRequest(string data) {
 		integer id := integer.getUnique();

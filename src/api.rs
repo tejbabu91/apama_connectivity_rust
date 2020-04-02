@@ -57,9 +57,13 @@ pub mod public_api {
         }
     }
 
+    // TODO: fix this!!!!! highly unsafe behavior
+    // but no other way at the moment to pass HostSide b/w threads
+    unsafe impl Send for ctypes::sag_plugin_t {}
+
     #[derive(Copy, Clone)]
     pub struct HostSide {
-        host_plugin: ctypes::sag_plugin_t,
+        pub host_plugin: ctypes::sag_plugin_t,
         send_fn: ctypes::sag_send_fn_t,
     }
 

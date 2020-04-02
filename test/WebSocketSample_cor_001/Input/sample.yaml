@@ -26,19 +26,20 @@ startChains:
           - fromhost
         # ... and send them back to this channel
         defaultChannel: intohost
-        defaultEventType: apamax.rust.EchoResponse
+        defaultEventType: apamax.rust.EchoMessage
         allowMissing: true
+    - diag: { tag: aftermapping }
 
     - mapperCodec:
         "*":
           towardsTransport:
             mapFrom:
-              - metadata.requestId: payload.id
+              - metadata.id: payload.id
               - payload: payload.data
-          #towardsHost:
-            #mapFrom:
-              #- payload.data: payload
-              #- payload.id: metadata.requestId
+          towardsHost:
+            mapFrom:
+              - payload.data: payload
+              - payload.id: metadata.id
               #- metadata.temp.channel: metadata.sag.channel
               #- metadata.temp.type: metadata.sag.type
     - diag: { tag: rusttransport }
