@@ -1,0 +1,12 @@
+[package]
+name = "diag_codec"
+version = "0.1.0"
+authors = ["GYS"]
+edition = "2018"
+
+[dependencies]
+rust_ap_connectivity = {path = "../../"}
+
+[lib]
+crate-type = ["dylib"]
+

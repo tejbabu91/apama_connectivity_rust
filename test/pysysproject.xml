@@ -24,7 +24,8 @@
 	<property name="verboseWaitForSignal"     value="true"/>
 
 	<property name="RUST_TARGET"              value="debug"/> <!-- or release -->
-	<property name="TEST_TRANSPORT_DIR"         value="${testRootDir}/../examples/echo_transport/target/${RUST_TARGET}"/>
+	<property name="EXAMPLES_DIR"         	  value="${testRootDir}/../examples/"/>
+	<property name="TEST_TRANSPORT_DIR"         value="${EXAMPLES_DIR}/echo_transport/target/${RUST_TARGET}"/>
 	
 	<!-- Custom test framework extensions, if needed -->
 	<!--

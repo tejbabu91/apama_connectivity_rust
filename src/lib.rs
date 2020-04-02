@@ -64,3 +64,65 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
     }
 }
 
+#[macro_export]
+macro_rules! DECLARE_CONNECTIVITY_CODEC {
+    ($elem:ident) => {
+        $crate::paste::item! {
+            #[no_mangle]
+            pub extern fn [<sag_plugin_api_version_$elem>](p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::__uint64_t {
+                4
+            }
+
+            #[no_mangle]
+            pub extern fn [<sag_create_plugin_with_params_$elem>](
+                name : *const ::std::os::raw::c_char,
+                chainId: *const ::std::os::raw::c_char,
+                config: $crate::api::ctypes::sag_underlying_data_t,
+                connectivityManager: *mut libc::c_void,
+                chain: *mut libc::c_void
+            ) -> $crate::api::ctypes::sag_plugin_t {
+                let param = $crate::api::public_api::CodecConstructorParameters::new(name, chainId, config, connectivityManager, chain);
+                let codec = $elem::new(HostSide::new(), TransportSide::new(), param);
+                $crate::api::plugin_impl_fn::rs_plugin_create_codec(codec)
+            }
+
+            #[no_mangle]
+            pub extern fn [<sag_destroy_plugin_$elem>](mut p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_destroy_codec_impl(&mut p)
+            }
+
+            #[no_mangle]
+            pub extern fn [<sag_plugin_start_$elem>](mut p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_start_codec_impl(&mut p)
+            }
+            #[no_mangle]
+            pub extern fn [<sag_plugin_shutdown_$elem>](mut p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_shutdown_codec_impl(&mut p)
+            }
+            #[no_mangle]
+            pub extern fn [<sag_plugin_hostReady_$elem>](mut p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_hostReady_codec_impl(&mut p)
+            }
+            #[no_mangle]
+            pub extern fn [<sag_plugin_setNextTowardsHost_$elem>](mut p: $crate::api::ctypes::sag_plugin_t, next_plugin: $crate::api::ctypes::sag_plugin_t, send_fn: $crate::api::ctypes::sag_send_fn_t)  -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_setNextTowardsHost_codec_impl(&mut p, next_plugin, send_fn)
+            }
+            
+            #[no_mangle]
+            pub extern fn [<sag_plugin_setNextTowardsTransport_$elem>](mut p: $crate::api::ctypes::sag_plugin_t, next_plugin: $crate::api::ctypes::sag_plugin_t, send_fn: $crate::api::ctypes::sag_send_fn_t)  -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_setNextTowardsTransport_codec_impl(&mut p, next_plugin, send_fn)
+            }
+
+            #[no_mangle]
+            pub extern fn [<sag_plugin_sendBatchTowardsTransport_$elem>](mut plug: $crate::api::ctypes::sag_plugin_t, start: *mut $crate::api::ctypes::sag_underlying_message_t, end: *mut $crate::api::ctypes::sag_underlying_message_t,) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_sendBatchTowardsTransport_codec_impl(&mut plug, start, end)
+            }
+
+            #[no_mangle]
+            pub extern fn [<sag_plugin_sendBatchTowardsHost_$elem>](mut plug: $crate::api::ctypes::sag_plugin_t, start: *mut $crate::api::ctypes::sag_underlying_message_t, end: *mut $crate::api::ctypes::sag_underlying_message_t,) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_sendBatchTowardsHost_codec_impl(&mut plug, start, end)
+            }
+        }
+    }
+}
+
