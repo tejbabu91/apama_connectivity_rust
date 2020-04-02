@@ -44,4 +44,10 @@ impl Transport for EchoTransport {
         Box::new(EchoTransport{hostside, params})
     }
 }
+
+impl std::ops::Drop for EchoTransport {
+    fn drop(&mut self) {
+        println!("EchoTransport Dropped");
+    }
+}
 DECLARE_CONNECTIVITY_TRANSPORT!(EchoTransport);

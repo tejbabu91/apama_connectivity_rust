@@ -17,10 +17,12 @@ class PySysTest(ApamaBaseTest):
 
 		self.waitForSignal('mycorrelator.log', expr="Got echo response", process=correlator, 
 			errorExpr=[' ERROR ', ' FATAL ', 'Failed to parse event'])
+		correlator.shutdown()
 
 	def validate(self):
 		self.assertGrep('mycorrelator.log', expr=r'<connectivity\.diag\.rustTransport> (.*) Towards Host:')
 		self.assertGrep('mycorrelator.log', expr=r'apamax.rust.RustTransportSample .* Got echo response: apamax.rust.EchoResponse.*Hello to Rust from Apama')
 		self.assertGrep('mycorrelator.out', expr=r'EchoTransport received message from host.*Hello to Rust from Apama')
 		self.assertGrep('mycorrelator.out', expr=r'Creating transport with config.*String\("myConfigKey"\): String\("config string value"\)')
-	
+		self.assertGrep('mycorrelator.out', expr=r'EchoTransport shutdown done')
+		self.assertGrep('mycorrelator.out', expr=r'EchoTransport Dropped')

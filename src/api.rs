@@ -101,9 +101,20 @@ pub mod public_api {
             Self: Sized;
     }
 
+    
+
     #[repr(C)]
     pub struct WrappedTransport {
         pub transport: *mut dyn Transport,
+    }
+
+    impl std::ops::Drop for WrappedTransport {
+        fn drop(&mut self) {
+            unsafe {
+                // Take the ownership back for the Transport object so that it gets dropped at the end of this scope.
+                Box::from_raw(self.transport);
+            }
+        }
     }
 
     #[derive(Debug, PartialEq)]
@@ -163,13 +174,12 @@ pub mod plugin_impl_fn {
         }
     }
 
-    pub fn rs_plugin_destroy_impl(_p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        // TODO: destroy
-        // unsafe {
-        //     // take ownership back so that rust can destroy it.
-        //     let bw = Box::from_raw(t);
-        //     let _bt = Box::from_raw(bw.transport);
-        // }
+    pub fn rs_plugin_destroy_impl(plug: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+        unsafe {
+            let wt = plug.r#plugin as *mut WrappedTransport;
+            // Take the ownership back so that it gets destroyed at the end of the scope.
+            Box::from_raw(wt);
+        }
         ctypes::sag_error_t_SAG_ERROR_OK
     }
 
