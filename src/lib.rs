@@ -17,7 +17,7 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
     ($elem:ident) => {
         use rust_ap_connectivity::api::ctypes;
         use paste;
-        use rust_ap_connectivity::api::public_api::{WrappedTransport};
+        use rust_ap_connectivity::api::public_api::{WrappedTransport, TransportConstructorParameters};
         paste::item! {
             #[no_mangle]
             pub extern fn [<sag_plugin_api_version_$elem>](p: ctypes::sag_plugin_t) -> ctypes::__uint64_t {
@@ -26,25 +26,17 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
 
             #[no_mangle]
             pub extern fn [<sag_create_plugin_with_params_$elem>](
-                name : *const ::std::os::raw::c_char, 
-                chainId: *const ::std::os::raw::c_char, 
+                name : *const ::std::os::raw::c_char,
+                chainId: *const ::std::os::raw::c_char,
                 config: ctypes::sag_underlying_data_t,
-                 _connectivityManager: *mut libc::c_void, 
-                 _reserved: *mut libc::c_void
+                connectivityManager: *mut libc::c_void,
+                chain: *mut libc::c_void
             ) -> ctypes::sag_plugin_t {
-                // TODO: is this if let... else panic construct the best way to handle this? don't really like creating a new scope for something this simple
-                if let Data::Map(configMap) = rust_ap_connectivity::api::data_conversion::c_to_rust_data(&config) {
-                // TODO: change to using a Parameters object for the new() method like in Java and C++ for extensibility purposes
-                let t = $elem::new(
-                        HostSide::new(), 
-                        configMap
-                    );
-                    let wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
-                    let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
-                    p
-                } else {
-                    panic!("config must be a map");
-                }         
+                let param = TransportConstructorParameters::new(name, chainId, config, connectivityManager, chain);
+                let t = $elem::new(HostSide::new(), param);
+                let wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
+                let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
+                p
             }
 
             #[no_mangle]

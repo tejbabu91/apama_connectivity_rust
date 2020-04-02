@@ -6,10 +6,51 @@ pub mod ctypes;
 
 pub mod public_api {
     use super::ctypes;
+    use libc;
     use std::cmp::Eq;
     use std::collections::HashMap;
+    use std::ffi::CStr;
     use std::fmt;
     use std::hash::{Hash, Hasher};
+    pub struct TransportConstructorParameters {
+        chainId: String,
+        pluginName: String,
+        config: HashMap<Data, Data>,
+        _connectivityManager: *mut libc::c_void,
+        _chain: *mut libc::c_void,
+    }
+
+    impl TransportConstructorParameters {
+        pub fn new(
+            name: *const ::std::os::raw::c_char,
+            chainId: *const ::std::os::raw::c_char,
+            config: ctypes::sag_underlying_data_t,
+            connectivityManager: *mut libc::c_void,
+            chain: *mut libc::c_void,
+        ) -> TransportConstructorParameters {
+            if let Data::Map(configMap) = super::data_conversion::c_to_rust_data(&config) {
+                TransportConstructorParameters {
+                    chainId: unsafe { CStr::from_ptr(chainId).to_string_lossy().into_owned() },
+                    pluginName: unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() },
+                    config: configMap,
+                    _connectivityManager: connectivityManager,
+                    _chain: chain,
+                }
+            } else {
+                panic!("config must be a map");
+            }
+        }
+
+        pub fn getConfig(&self) -> &HashMap<Data, Data> {
+            return &self.config;
+        }
+        pub fn getPluginName(&self) -> &str {
+            return &self.pluginName;
+        }
+        pub fn getChainId(&self) -> &str {
+            return &self.chainId;
+        }
+    }
 
     #[derive(Copy, Clone)]
     struct RemoteHostSide {
@@ -54,7 +95,8 @@ pub mod public_api {
         fn hostReady(&self);
         fn deliverMessageTowardsTransport(&self, msg: Message);
         fn getHostSide(&self) -> &HostSide;
-        fn new(h: HostSide, config: HashMap<Data, Data>) -> Box<dyn Transport>
+        fn getParams(&self) -> &TransportConstructorParameters;
+        fn new(h: HostSide, params: TransportConstructorParameters) -> Box<dyn Transport>
         where
             Self: Sized;
     }

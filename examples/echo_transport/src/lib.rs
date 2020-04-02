@@ -2,13 +2,13 @@ use rust_ap_connectivity::*;
 use std::collections::HashMap;
 
 pub struct EchoTransport {
-    data: i64,
-    hostside: HostSide
+    hostside: HostSide,
+    params: TransportConstructorParameters,
 }
 
 impl Transport for EchoTransport {
     fn start(&self) {
-        println!("EchoTransport started with {}", self.data);
+        println!("EchoTransport started with {:?}", self.params.getConfig());
     }
     fn shutdown(&self) {
         println!("EchoTransport shutdown done");
@@ -36,9 +36,12 @@ impl Transport for EchoTransport {
     fn getHostSide(&self) -> &HostSide {
         &self.hostside
     }
-    fn new(h: HostSide, config: HashMap<Data,Data>) -> Box<dyn Transport> {
-        println!("Creating transport with config {:?}", config);
-        Box::new(EchoTransport{data: 43, hostside: h})
+    fn getParams(&self) -> &TransportConstructorParameters {
+        &self.params
+    }
+    fn new(hostside: HostSide, params: TransportConstructorParameters) -> Box<dyn Transport> {
+        println!("Creating transport with config: {:?}", params.getConfig());
+        Box::new(EchoTransport{hostside, params})
     }
 }
 DECLARE_CONNECTIVITY_TRANSPORT!(EchoTransport);
