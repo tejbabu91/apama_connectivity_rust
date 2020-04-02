@@ -15,12 +15,9 @@ Few changes were made to the c_functions.hpp header file to make bidngen work:
 #[macro_export]
 macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
     ($elem:ident) => {
-        use rust_ap_connectivity::api::ctypes;
-        use paste;
-        use rust_ap_connectivity::api::public_api::{TransportConstructorParameters};
-        paste::item! {
+        $crate::paste::item! {
             #[no_mangle]
-            pub extern fn [<sag_plugin_api_version_$elem>](p: ctypes::sag_plugin_t) -> ctypes::__uint64_t {
+            pub extern fn [<sag_plugin_api_version_$elem>](p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::__uint64_t {
                 4
             }
 
@@ -28,40 +25,40 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
             pub extern fn [<sag_create_plugin_with_params_$elem>](
                 name : *const ::std::os::raw::c_char,
                 chainId: *const ::std::os::raw::c_char,
-                config: ctypes::sag_underlying_data_t,
+                config: $crate::api::ctypes::sag_underlying_data_t,
                 connectivityManager: *mut libc::c_void,
                 chain: *mut libc::c_void
-            ) -> ctypes::sag_plugin_t {
-                let param = TransportConstructorParameters::new(name, chainId, config, connectivityManager, chain);
+            ) -> $crate::api::ctypes::sag_plugin_t {
+                let param = $crate::api::public_api::TransportConstructorParameters::new(name, chainId, config, connectivityManager, chain);
                 let transport = $elem::new(HostSide::new(), param);
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_create_transport(transport)
+                $crate::api::plugin_impl_fn::rs_plugin_create_transport(transport)
             }
 
             #[no_mangle]
-            pub extern fn [<sag_destroy_plugin_$elem>](p: ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_destroy_impl(&p)
+            pub extern fn [<sag_destroy_plugin_$elem>](p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_destroy_impl(&p)
             }
 
             #[no_mangle]
-            pub extern fn [<sag_plugin_start_$elem>](p: ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_start_impl(&p)
+            pub extern fn [<sag_plugin_start_$elem>](p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_start_impl(&p)
             }
             #[no_mangle]
-            pub extern fn [<sag_plugin_shutdown_$elem>](p: ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_shutdown_impl(&p)
+            pub extern fn [<sag_plugin_shutdown_$elem>](p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_shutdown_impl(&p)
             }
             #[no_mangle]
-            pub extern fn [<sag_plugin_hostReady_$elem>](p: ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_hostReady_impl(&p)
+            pub extern fn [<sag_plugin_hostReady_$elem>](p: $crate::api::ctypes::sag_plugin_t) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_hostReady_impl(&p)
             }
             #[no_mangle]
-            pub extern fn [<sag_plugin_setNextTowardsHost_$elem>](p: ctypes::sag_plugin_t, host_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t)  -> ctypes::sag_error_t {
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_setNextTowardsHost_impl(&p, host_plugin, send_fn)
+            pub extern fn [<sag_plugin_setNextTowardsHost_$elem>](p: $crate::api::ctypes::sag_plugin_t, host_plugin: $crate::api::ctypes::sag_plugin_t, send_fn: $crate::api::ctypes::sag_send_fn_t)  -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_setNextTowardsHost_impl(&p, host_plugin, send_fn)
             }
 
             #[no_mangle]
-            pub extern fn [<sag_plugin_sendBatchTowardsTransport_$elem>](plug: ctypes::sag_plugin_t, start: *mut ctypes::sag_underlying_message_t, end: *mut ctypes::sag_underlying_message_t,) -> ctypes::sag_error_t {
-                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_sendBatchTowardsTransport_impl(&plug, start, end)
+            pub extern fn [<sag_plugin_sendBatchTowardsTransport_$elem>](plug: $crate::api::ctypes::sag_plugin_t, start: *mut $crate::api::ctypes::sag_underlying_message_t, end: *mut $crate::api::ctypes::sag_underlying_message_t,) -> $crate::api::ctypes::sag_error_t {
+                $crate::api::plugin_impl_fn::rs_plugin_sendBatchTowardsTransport_impl(&plug, start, end)
             }
         }
     }
