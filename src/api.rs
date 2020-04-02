@@ -12,6 +12,7 @@ pub mod public_api {
     use std::ffi::CStr;
     use std::fmt;
     use std::hash::{Hash, Hasher};
+
     pub struct TransportConstructorParameters {
         chainId: String,
         pluginName: String,
@@ -101,8 +102,6 @@ pub mod public_api {
             Self: Sized;
     }
 
-    
-
     #[repr(C)]
     pub struct WrappedTransport {
         pub transport: *mut dyn Transport,
@@ -174,6 +173,11 @@ pub mod plugin_impl_fn {
         }
     }
 
+    pub fn rs_plugin_create_transport(transport: Box<dyn Transport>) -> ctypes::sag_plugin_t {
+        let wt = Box::new(WrappedTransport{transport: Box::into_raw(transport)});
+        let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
+        p
+    }
     pub fn rs_plugin_destroy_impl(plug: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
         unsafe {
             let wt = plug.r#plugin as *mut WrappedTransport;

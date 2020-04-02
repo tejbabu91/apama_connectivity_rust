@@ -17,7 +17,7 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
     ($elem:ident) => {
         use rust_ap_connectivity::api::ctypes;
         use paste;
-        use rust_ap_connectivity::api::public_api::{WrappedTransport, TransportConstructorParameters};
+        use rust_ap_connectivity::api::public_api::{TransportConstructorParameters};
         paste::item! {
             #[no_mangle]
             pub extern fn [<sag_plugin_api_version_$elem>](p: ctypes::sag_plugin_t) -> ctypes::__uint64_t {
@@ -33,10 +33,8 @@ macro_rules! DECLARE_CONNECTIVITY_TRANSPORT {
                 chain: *mut libc::c_void
             ) -> ctypes::sag_plugin_t {
                 let param = TransportConstructorParameters::new(name, chainId, config, connectivityManager, chain);
-                let t = $elem::new(HostSide::new(), param);
-                let wt = Box::new(WrappedTransport{transport: Box::into_raw(t)});
-                let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
-                p
+                let transport = $elem::new(HostSide::new(), param);
+                rust_ap_connectivity::api::plugin_impl_fn::rs_plugin_create_transport(transport)
             }
 
             #[no_mangle]
