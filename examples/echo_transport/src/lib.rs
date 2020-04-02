@@ -7,16 +7,16 @@ pub struct EchoTransport {
 }
 
 impl Transport for EchoTransport {
-    fn start(&self) {
+    fn start(&mut self) {
         println!("EchoTransport started with {:?}", self.params.getConfig());
     }
-    fn shutdown(&self) {
+    fn shutdown(&mut self) {
         println!("EchoTransport shutdown done");
     }
-    fn hostReady(&self) {
+    fn hostReady(&mut self) {
         println!("EchoTransport handled hostReady");
     }
-    fn deliverMessageTowardsTransport(&self, mut msg: Message) {
+    fn deliverMessageTowardsTransport(&mut self, mut msg: Message) {
         println!("EchoTransport received message from host: {:?}", msg);
         // echo message back towards host
         let mut m = HashMap::new();
@@ -33,11 +33,11 @@ impl Transport for EchoTransport {
         };
         self.getHostSide().sendMessageTowardsHost(m);
     }
-    fn getHostSide(&self) -> &HostSide {
-        &self.hostside
+    fn getHostSide(&mut self) -> &mut HostSide {
+        &mut self.hostside
     }
-    fn getParams(&self) -> &TransportConstructorParameters {
-        &self.params
+    fn getParams(&mut self) -> &mut TransportConstructorParameters {
+        &mut self.params
     }
     fn new(hostside: HostSide, params: TransportConstructorParameters) -> Box<dyn Transport> {
         println!("Creating transport with config: {:?}", params.getConfig());

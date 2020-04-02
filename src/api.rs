@@ -28,9 +28,9 @@ pub mod public_api {
             config: ctypes::sag_underlying_data_t,
             connectivityManager: *mut libc::c_void,
             chain: *mut libc::c_void,
-        ) -> TransportConstructorParameters {
+        ) -> Self {
             if let Data::Map(configMap) = super::data_conversion::c_to_rust_data(&config) {
-                TransportConstructorParameters {
+                Self {
                     chainId: unsafe { CStr::from_ptr(chainId).to_string_lossy().into_owned() },
                     pluginName: unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() },
                     config: configMap,
@@ -44,6 +44,9 @@ pub mod public_api {
 
         pub fn getConfig(&self) -> &HashMap<Data, Data> {
             return &self.config;
+        }
+        pub fn getConfigMut(&mut self) -> &mut HashMap<Data, Data> {
+            return &mut self.config;
         }
         pub fn getPluginName(&self) -> &str {
             return &self.pluginName;
@@ -89,14 +92,14 @@ pub mod public_api {
             host.send_fn = send_fn;
         }
     }
-
+    
     pub trait Transport {
-        fn start(&self);
-        fn shutdown(&self);
-        fn hostReady(&self);
-        fn deliverMessageTowardsTransport(&self, msg: Message);
-        fn getHostSide(&self) -> &HostSide;
-        fn getParams(&self) -> &TransportConstructorParameters;
+        fn start(&mut self);
+        fn shutdown(&mut self);
+        fn hostReady(&mut self);
+        fn deliverMessageTowardsTransport(&mut self, msg: Message);
+        fn getHostSide(&mut self) -> &mut HostSide;
+        fn getParams(&mut self) -> &mut TransportConstructorParameters;
         fn new(h: HostSide, params: TransportConstructorParameters) -> Box<dyn Transport>
         where
             Self: Sized;
@@ -165,10 +168,10 @@ pub mod plugin_impl_fn {
     use super::public_api::*;
 
     impl ctypes::sag_plugin_t {
-        fn transport(&self) -> &dyn Transport {
+        fn transport(&mut self) -> &mut dyn Transport {
             unsafe {
                 let wt = self.r#plugin as *mut WrappedTransport;
-                &*((*wt).transport)
+                &mut *((*wt).transport)
             }
         }
     }
@@ -178,7 +181,7 @@ pub mod plugin_impl_fn {
         let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
         p
     }
-    pub fn rs_plugin_destroy_impl(plug: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    pub fn rs_plugin_destroy_impl(plug: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
         unsafe {
             let wt = plug.r#plugin as *mut WrappedTransport;
             // Take the ownership back so that it gets destroyed at the end of the scope.
@@ -187,23 +190,23 @@ pub mod plugin_impl_fn {
         ctypes::sag_error_t_SAG_ERROR_OK
     }
 
-    pub fn rs_plugin_start_impl(p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    pub fn rs_plugin_start_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
         p.transport().start();
         ctypes::sag_error_t_SAG_ERROR_OK
     }
 
-    pub fn rs_plugin_shutdown_impl(p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    pub fn rs_plugin_shutdown_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
         p.transport().shutdown();
         ctypes::sag_error_t_SAG_ERROR_OK
     }
 
-    pub fn rs_plugin_hostReady_impl(p: &ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+    pub fn rs_plugin_hostReady_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
         p.transport().hostReady();
         ctypes::sag_error_t_SAG_ERROR_OK
     }
 
     pub fn rs_plugin_setNextTowardsHost_impl(
-        this_plugin: &ctypes::sag_plugin_t,
+        this_plugin: &mut ctypes::sag_plugin_t,
         host_plugin: ctypes::sag_plugin_t,
         send_fn: ctypes::sag_send_fn_t,
     ) -> ctypes::sag_error_t {
@@ -213,7 +216,7 @@ pub mod plugin_impl_fn {
     }
 
     pub extern "C" fn rs_plugin_sendBatchTowardsTransport_impl(
-        plug: &ctypes::sag_plugin_t,
+        plug: &mut ctypes::sag_plugin_t,
         start: *mut ctypes::sag_underlying_message_t,
         end: *mut ctypes::sag_underlying_message_t,
     ) -> ctypes::sag_error_t {
