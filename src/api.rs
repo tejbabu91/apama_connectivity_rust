@@ -57,39 +57,31 @@ pub mod public_api {
     }
 
     #[derive(Copy, Clone)]
-    struct RemoteHostSide {
+    pub struct HostSide {
         host_plugin: ctypes::sag_plugin_t,
         send_fn: ctypes::sag_send_fn_t,
     }
 
-    pub struct HostSide {
-        host: std::cell::RefCell<RemoteHostSide>,
-    }
-
     impl HostSide {
         pub fn sendMessageTowardsHost(&self, msg: Message) {
-            let host = self.host.borrow();
             unsafe {
                 let m = super::data_conversion::rust_to_c_msg(&msg);
-                host.send_fn.unwrap()(host.host_plugin.clone(), m, m.offset(1));
+                self.send_fn.unwrap()(self.host_plugin.clone(), m, m.offset(1));
                 // TODO: Do we need to manually free the 'm' here?
             }
         }
         pub fn new() -> HostSide {
             HostSide {
-                host: std::cell::RefCell::new(RemoteHostSide {
-                    host_plugin: ctypes::sag_plugin_t {
-                        r#plugin: std::ptr::null_mut(),
-                    },
-                    send_fn: Option::None,
-                }),
+                host_plugin: ctypes::sag_plugin_t {
+                    r#plugin: std::ptr::null_mut(),
+                },
+                send_fn: Option::None,
             }
         }
 
-        pub fn update(&self, host_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t) {
-            let mut host = self.host.borrow_mut();
-            host.host_plugin = host_plugin;
-            host.send_fn = send_fn;
+        pub fn update(&mut self, host_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t) {
+            self.host_plugin = host_plugin;
+            self.send_fn = send_fn;
         }
     }
     
