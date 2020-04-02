@@ -1,5 +1,5 @@
 use async_std::sync::Arc;
-use futures_util::stream::SplitSink;
+
 use futures_util::{SinkExt, StreamExt};
 use log::LevelFilter;
 use log::{error, info};
@@ -12,7 +12,7 @@ use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::Mutex;
+
 use tokio::task;
 use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::{accept_async, tungstenite::Error};
@@ -68,7 +68,7 @@ async fn handle_connection(
     let (mut sender, mut receiver) = ws_stream.split();
 
     info!("New WebSocket connection: {}", peer);
-    let (mut tx, mut rx): (Sender<WSMessage>, Receiver<WSMessage>) = channel(100);
+    let (tx, mut rx): (Sender<WSMessage>, Receiver<WSMessage>) = channel(100);
 
     conn_arc.lock().unwrap().insert(id as u64, tx);
 
@@ -112,7 +112,7 @@ impl Transport for WebSocketTransport {
         let conn_arc = Arc::clone(&self.connections);
         let id_arc = Arc::clone(&self.id_tracker);
 
-        let (mut tx, mut rx): (Sender<Message>, Receiver<Message>) = channel(100);
+        let (tx, mut rx): (Sender<Message>, Receiver<Message>) = channel(100);
 
         let host_side = self.hostside;
 
@@ -163,7 +163,7 @@ impl Transport for WebSocketTransport {
     fn deliverMessageTowardsTransport(&mut self, msg: Message) {
         println!("WebSocketTransport received message from host: {:?}", msg);
 
-        let mut wsm = WSMessage::from(format!(
+        let wsm = WSMessage::from(format!(
             "{}",
             msg.payload
                 .get_string()
