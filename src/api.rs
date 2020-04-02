@@ -142,8 +142,8 @@ pub mod public_api {
                 List(v) => v.hash(state),
                 Buffer(v) => v.hash(state),
                 Float(v) => v.to_bits().hash(state),
-                // Map gets 0 hashcode - inefficient but should produce correct values
-                _ => 0.hash(state), // TODO: use of _ like this is unsafe, we should be explicit
+                Map(v) => v.len().hash(state), // using size is not great but better than nothing
+                None => 0.hash(state),
             };
         }
     }
