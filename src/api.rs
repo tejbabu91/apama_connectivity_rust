@@ -84,11 +84,11 @@ pub mod public_api {
             self.send_fn = send_fn;
         }
     }
-    
+
     pub trait Transport {
         fn start(&mut self);
         fn shutdown(&mut self);
-        fn hostReady(&mut self);
+        fn hostReady(&mut self);      
         fn deliverMessageTowardsTransport(&mut self, msg: Message);
         fn getHostSide(&mut self) -> &mut HostSide;
         fn getParams(&mut self) -> &mut TransportConstructorParameters;
@@ -153,6 +153,107 @@ pub mod public_api {
         pub payload: Data,
         pub metadata: HashMap<Data, Data>,
     }
+
+    // ========= Codec Support ==============
+    pub struct CodecConstructorParameters {
+        chainId: String,
+        pluginName: String,
+        config: HashMap<Data, Data>,
+        _connectivityManager: *mut libc::c_void,
+        _chain: *mut libc::c_void,
+    }
+
+    impl CodecConstructorParameters {
+        pub fn new(
+            name: *const ::std::os::raw::c_char,
+            chainId: *const ::std::os::raw::c_char,
+            config: ctypes::sag_underlying_data_t,
+            connectivityManager: *mut libc::c_void,
+            chain: *mut libc::c_void,
+        ) -> Self {
+            if let Data::Map(configMap) = super::data_conversion::c_to_rust_data(&config) {
+                Self {
+                    chainId: unsafe { CStr::from_ptr(chainId).to_string_lossy().into_owned() },
+                    pluginName: unsafe { CStr::from_ptr(name).to_string_lossy().into_owned() },
+                    config: configMap,
+                    _connectivityManager: connectivityManager,
+                    _chain: chain,
+                }
+            } else {
+                panic!("config must be a map");
+            }
+        }
+
+        pub fn getConfig(&self) -> &HashMap<Data, Data> {
+            return &self.config;
+        }
+        pub fn getConfigMut(&mut self) -> &mut HashMap<Data, Data> {
+            return &mut self.config;
+        }
+        pub fn getPluginName(&self) -> &str {
+            return &self.pluginName;
+        }
+        pub fn getChainId(&self) -> &str {
+            return &self.chainId;
+        }
+    }
+
+
+    pub struct TransportSide {
+        next_plugin: ctypes::sag_plugin_t,
+        send_fn: ctypes::sag_send_fn_t,
+    }
+    impl TransportSide {
+        pub fn sendMessageTowardsTransport(&self, msg: Message) {
+            unsafe {
+                let m = super::data_conversion::rust_to_c_msg(&msg);
+                self.send_fn.unwrap()(self.next_plugin.clone(), m, m.offset(1));
+            }
+        }
+        pub fn new() -> TransportSide {
+            TransportSide {
+                next_plugin: ctypes::sag_plugin_t {
+                    r#plugin: std::ptr::null_mut(),
+                },
+                send_fn: Option::None,
+            }
+        }
+
+        pub fn update(&mut self, next_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t) {
+            self.next_plugin = next_plugin;
+            self.send_fn = send_fn;
+        }
+    }
+
+    pub trait Codec {
+        fn start(&mut self);
+        fn shutdown(&mut self);
+        fn hostReady(&mut self);
+
+        fn deliverMessageTowardsTransport(&mut self, msg: Message);
+        fn deliverMessageTowardsHost(&mut self, msg: Message);
+
+        fn getParams(&mut self) -> &mut CodecConstructorParameters;
+        fn getHostSide(&mut self) -> &mut HostSide;
+        fn getTransportSide(&mut self) -> &mut TransportSide;
+
+        fn new(host: HostSide, transportSide: TransportSide, params: CodecConstructorParameters) -> Box<dyn Codec>
+        where
+            Self: Sized;
+    }
+    #[repr(C)]
+    pub struct WrappedCodec {
+        pub codec: *mut dyn Codec,
+    }
+
+    impl std::ops::Drop for WrappedCodec {
+        fn drop(&mut self) {
+            unsafe {
+                // Take the ownership back for the Codec object so that it gets dropped at the end of this scope.
+                Box::from_raw(self.codec);
+            }
+        }
+    }
 }
 
 pub mod plugin_impl_fn {
@@ -164,6 +265,12 @@ pub mod plugin_impl_fn {
             unsafe {
                 let wt = self.r#plugin as *mut WrappedTransport;
                 &mut *((*wt).transport)
+            }
+        }
+        fn codec(&mut self) -> &mut dyn Codec {
+            unsafe {
+                let wt = self.r#plugin as *mut WrappedCodec;
+                &mut *((*wt).codec)
             }
         }
     }
@@ -221,6 +328,95 @@ pub mod plugin_impl_fn {
                 }
                 let msg = super::data_conversion::c_to_rust_msg(&*p);
                 plug.transport().deliverMessageTowardsTransport(msg);
+                i += 1;
+            }
+        }
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub fn rs_plugin_create_codec(codec: Box<dyn Codec>) -> ctypes::sag_plugin_t {
+        let wt = Box::new(WrappedCodec{codec: Box::into_raw(codec)});
+        let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
+        p
+    }
+    pub fn rs_plugin_destroy_codec_impl(plug: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+        unsafe {
+            let wt = plug.r#plugin as *mut WrappedCodec;
+            // Take the ownership back so that it gets destroyed at the end of the scope.
+            Box::from_raw(wt);
+        }
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub fn rs_plugin_start_codec_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+        p.codec().start();
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub fn rs_plugin_shutdown_codec_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+        p.codec().shutdown();
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub fn rs_plugin_hostReady_codec_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
+        p.codec().hostReady();
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub fn rs_plugin_setNextTowardsHost_codec_impl(
+        this_plugin: &mut ctypes::sag_plugin_t,
+        next_plugin: ctypes::sag_plugin_t,
+        send_fn: ctypes::sag_send_fn_t,
+    ) -> ctypes::sag_error_t {
+        let side = this_plugin.codec().getHostSide();
+        side.update(next_plugin, send_fn);
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub fn rs_plugin_setNextTowardsTransport_codec_impl(
+        this_plugin: &mut ctypes::sag_plugin_t,
+        next_plugin: ctypes::sag_plugin_t,
+        send_fn: ctypes::sag_send_fn_t,
+    ) -> ctypes::sag_error_t {
+        let side = this_plugin.codec().getTransportSide();
+        side.update(next_plugin, send_fn);
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub extern "C" fn rs_plugin_sendBatchTowardsTransport_codec_impl(
+        plug: &mut ctypes::sag_plugin_t,
+        start: *mut ctypes::sag_underlying_message_t,
+        end: *mut ctypes::sag_underlying_message_t,
+    ) -> ctypes::sag_error_t {
+        unsafe {
+            let mut i = 0;
+            loop {
+                let p = start.offset(i);
+                if p == end {
+                    break;
+                }
+                let msg = super::data_conversion::c_to_rust_msg(&*p);
+                plug.codec().deliverMessageTowardsTransport(msg);
+                i += 1;
+            }
+        }
+        ctypes::sag_error_t_SAG_ERROR_OK
+    }
+
+    pub extern "C" fn rs_plugin_sendBatchTowardsHost_codec_impl(
+        plug: &mut ctypes::sag_plugin_t,
+        start: *mut ctypes::sag_underlying_message_t,
+        end: *mut ctypes::sag_underlying_message_t,
+    ) -> ctypes::sag_error_t {
+        unsafe {
+            let mut i = 0;
+            loop {
+                let p = start.offset(i);
+                if p == end {
+                    break;
+                }
+                let msg = super::data_conversion::c_to_rust_msg(&*p);
+                plug.codec().deliverMessageTowardsHost(msg);
                 i += 1;
             }
         }

@@ -1,0 +1,40 @@
+connectivityPlugins:
+  rustTransport:
+    directory: ${TEST_TRANSPORT_DIR}
+    libraryName: echo_transport
+    class: EchoTransport
+  diag:
+    directory: ${TEST_CODEC_DIR}
+    libraryName: diag_codec
+    class: DiagCodec
+  mapperCodec:
+    libraryName: MapperCodec
+    class: MapperCodec
+
+startChains:
+  rustTransport:
+    # Use the Map host plugin, so the payload type will be a map<string,data>
+    # with the keys being the name of the fields in the event
+    - apama.eventMap:
+        # Capture events to this channel ...
+        subscribeChannels:
+          - fromhost
+        # ... and send them back to this channel
+        defaultChannel: intohost
+        defaultEventType: apamax.rust.EchoResponse
+        allowMissing: true
+    - diag: { tag: Mapper }
+    - mapperCodec:
+        "*":
+          towardsTransport:
+            mapFrom:
+              - metadata.requestId: payload.id
+              - payload: payload.data
+          towardsHost:
+            mapFrom:
+              - metadata.typeTowardsTransport: metadata.sag.type
+
+    - diag: { tag: Transport }
+    - rustTransport:
+        myConfigKey: "config string value"
+
