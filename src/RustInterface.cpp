@@ -30,8 +30,8 @@ sag_underlying_data_t* create_cpp_data_t_double(double val) {
 	return reinterpret_cast<sag_underlying_data_t*>(new data_t(val));
 }
 
-sag_underlying_data_t* create_cpp_data_t_string(const char* s) {
-	return reinterpret_cast<sag_underlying_data_t*>(new data_t(s));
+sag_underlying_data_t* create_cpp_data_t_string(const char* s, size_t len) {
+	return reinterpret_cast<sag_underlying_data_t*>(new data_t(s, len));
 }
 
 sag_underlying_data_t* create_cpp_data_t_buffer(const uint8_t* buf, size_t size) {

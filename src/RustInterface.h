@@ -12,7 +12,7 @@ extern "C" {
 	sag_underlying_data_t* create_cpp_data_t_bool(bool val);
 	sag_underlying_data_t* create_cpp_data_t_int64(int64_t val);
 	sag_underlying_data_t* create_cpp_data_t_double(double val);
-	sag_underlying_data_t* create_cpp_data_t_string(const char* s);
+	sag_underlying_data_t* create_cpp_data_t_string(const char* s, size_t len);
 	sag_underlying_data_t* create_cpp_data_t_buffer(const uint8_t* buf, size_t size);
 	sag_underlying_vector_t* create_cpp_list_t_with_capacity(int64_t capacity);
 	void append_to_list_t(sag_underlying_vector_t *l, sag_underlying_data_t *d);

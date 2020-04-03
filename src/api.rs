@@ -125,7 +125,18 @@ pub mod public_api {
         Float(f64),
 
         /// An owned and dynamically-sized String. 
+        /// 
+        /// Use this type for your strings unless you want to reference a static string literal 
+        /// in which case StaticStr will be a better choice. 
+        /// 
+        /// 
         String(String),
+
+        /// An immutable reference to a static string (or slice of one), which is a convenient  
+        /// way to reference a static string literal. In future versions of the API this may be more efficient (reduced copies).
+        /// 
+        /// This is similar to the CONST_STRING type in the C++ data_t. 
+        //StaticStr(&'static str), // TODO: is this still worth having, given it's no more efficient?
 
         List(Vec<Data>),
         Map(HashMap<Data, Data>),
@@ -216,6 +227,7 @@ pub mod public_api {
                 Boolean(v) => v.hash(state),
                 Integer(v) => v.hash(state),
                 String(v) => v.hash(state),
+                //StaticStr(v) => v.hash(state),
                 List(v) => v.hash(state),
                 Buffer(v) => v.hash(state),
                 Float(v) => v.to_bits().hash(state),
@@ -504,7 +516,7 @@ pub mod data_conversion {
     use super::ctypes::*;
     use super::public_api::*;
     use std::collections::HashMap;
-    use std::ffi::{CStr, CString};
+    use std::ffi::{CStr};
 
     /** C++ functions to create C++ message object from Rust. */
     extern "C" {
@@ -512,7 +524,7 @@ pub mod data_conversion {
         fn create_cpp_data_t_bool(val: bool) -> *mut sag_underlying_data_t;
         fn create_cpp_data_t_int64(val: i64) -> *mut sag_underlying_data_t;
         fn create_cpp_data_t_double(val: f64) -> *mut sag_underlying_data_t;
-        fn create_cpp_data_t_string(s: *const int_fast8_t) -> *mut sag_underlying_data_t;
+        fn create_cpp_data_t_string(s: *const int_fast8_t, len: usize) -> *mut sag_underlying_data_t;
         fn create_cpp_data_t_buffer(
             buf: *const uint_fast8_t,
             size_t: uint_least64_t,
@@ -645,15 +657,15 @@ pub mod data_conversion {
                 unsafe { create_cpp_data_t_double(*v) }
             }
             Data::String(v) => {
-                // tag = sag_data_tag_SAG_DATA_STRING;
-                // val.string = CString::new(v.as_str()).unwrap().into_raw();
-                // return Box::into_raw(Box::new(sag_underlying_data_t {
-                //     __bindgen_anon_1: val,
-                //     tag: tag,
-                // }));
-                let cstr = CString::new(v.as_str()).unwrap();
-                unsafe { create_cpp_data_t_string(cstr.as_ptr()) }
+                // TODO: maybe we should do some validation to check that the Rust string doesn't contain nulls (perhaps CStr can help us with that)
+
+                // pass the length explicitly because in Rust, string buffers are not null-terminated; plus, it's good practice
+                unsafe { create_cpp_data_t_string(v.as_ptr() as *const i8, v.len()) }
             }
+            /*Data::StaticStr(v) => {
+                // unfortunately can't use the zero-copy data_t CONST_STRING constructor as data_t assumes its strings are null-terminated which isn't the case for Rust strings
+                unsafe { create_cpp_data_t_string(v.as_ptr() as *const i8, v.len()) }
+            }*/
             Data::List(v) => {
                 // tag = sag_data_tag_SAG_DATA_LIST;
                 // // sag_underlying_vector_table_t
