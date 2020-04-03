@@ -76,6 +76,7 @@ async fn handle_connection(
         task::spawn(async move {
             while let Some(m) = rx.recv().await {
                 // let c = m.clone();
+                info!("sending back: {}", m);
                 if let Err(e) = sender.send(m).await {
                     rx.close();
                     error!("client connection closed: {}", e);
