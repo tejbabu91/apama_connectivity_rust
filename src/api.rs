@@ -136,6 +136,60 @@ pub mod public_api {
             }
         }
     }
+    
+    #[macro_export]
+    macro_rules! DATA_GETTER {
+        ($name:ident, $variant:ident, $the_type:ty) => {
+            $crate::paste::item! {
+                pub fn [<as_$name>](&self) -> &$the_type {
+                    match self {
+                        Data::$variant(v) => v,
+                        _ => panic!("Not of type $variant on {:?}", self)
+                    }
+                }
+                pub fn [<as_opt_$name>](&self) -> Option<&$the_type> {
+                    match self {
+                        Data::$variant(v) => Some(v),
+                        _ => None,
+                    }
+                }
+                pub fn [<is_$name>](&self) -> bool {
+                    match self {
+                        Data::$variant(_) => true,
+                        _ => false,
+                    }
+                }
+                pub fn [<to_$name>](&self) -> $the_type {
+                    match self {
+                        Data::$variant(v) => v.clone(),
+                        _ => panic!("Not of type $variant on {:?}", self)
+                    }
+                }
+                pub fn [<into_$name>](self) -> $the_type {
+                    match self {
+                        Data::$variant(v) => v,
+                        _ => panic!("Not of type $variant on {:?}", self)
+                    }
+                }
+            }
+        }
+    }
+
+    impl Data {
+        DATA_GETTER!(bool, Boolean, bool);
+        DATA_GETTER!(int, Integer, i64);
+        DATA_GETTER!(float, Float, f64);
+        DATA_GETTER!(string, String, String);
+        DATA_GETTER!(list, List, Vec<Data>);
+        DATA_GETTER!(map, Map, HashMap<Data,Data>);
+        DATA_GETTER!(buffer, Buffer, Vec<u8>);
+        pub fn is_none(&self) -> bool {
+            match self {
+                Data::None => true,
+                _ => false,
+            }
+        }
+    }
 
     // TODO: this seems weird - if (?) we think we should implement Display, we shouldn't
     // do it by just returning the Debug format (using ?), that's just misleading
