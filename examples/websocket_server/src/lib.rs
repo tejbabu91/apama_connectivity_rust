@@ -76,7 +76,7 @@ async fn handle_connection(
         task::spawn(async move {
             while let Some(m) = rx.recv().await {
                 // let c = m.clone();
-                info!("sending back: {}", m);
+                // info!("sending back: {}", m);
                 if let Err(e) = sender.send(m).await {
                     rx.close();
                     error!("client connection closed: {}", e);
@@ -162,7 +162,7 @@ impl Transport for WebSocketTransport {
         println!("WebSocketTransport handled hostReady");
     }
     fn deliverMessageTowardsTransport(&mut self, msg: Message) {
-        println!("WebSocketTransport received message from host: {:?}", msg);
+        // println!("WebSocketTransport received message from host: {:?}", msg);
 
         let wsm = WSMessage::from(format!(
             "{}",

@@ -22,6 +22,8 @@ event EchoResponse {
 
 monitor RustTransportSample
 {
+	integer count := 0;
+
 	action onload()
 	{
 		// get responses that come back from the chain
@@ -31,19 +33,16 @@ monitor RustTransportSample
 		ConnectivityPlugins.onApplicationInitialized();
 		//string data := "Hello to Rust from Apama";
 		//simpleRequest(data);
-
 		on all EchoMessage() as e {
-			log "Received: " + e.toString() at INFO;
+			//log "Received: " + e.toString() at INFO;
+			count := count + 1;
 			send EchoMessage(e.id, "Received " + e.data) to "fromhost";
 		}
-	}
-	action simpleRequest(string data) {
-		integer id := integer.getUnique();
-		on all EchoResponse() as resp {
-			log "Got echo response: "+resp.toString() at INFO;
+
+		on all wait(1.0) {
+			log "Receved: " + count.toString() + "/sec" at INFO;
+			count := 0;
 		}
-		send EchoMessage(id, data) to "fromhost";
-		log "Sent: " + EchoMessage(id, data).toString();
 	}
 }
 
