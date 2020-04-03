@@ -21,8 +21,11 @@ class PySysTest(ApamaBaseTest):
 
 	def validate(self):
 		self.assertGrep('mycorrelator.log', expr=r'<connectivity\.diag\.rustTransport> (.*) Towards Host:')
-		self.assertGrep('mycorrelator.log', expr=r'apamax.rust.RustTransportSample .* Got echo response: apamax.rust.EchoResponse.*Hello to Rust from Apama')
 		self.assertGrep('mycorrelator.out', expr=r'EchoTransport received message from host.*Hello to Rust from Apama')
+
+		self.assertGrep('mycorrelator.log', expr=r'apamax.rust.RustTransportSample .* Got echo response: apamax.rust.EchoResponse.*Hello to Rust from Apama')
+		self.assertGrep('mycorrelator.log', expr=r'Got echo response: apamax.rust.EchoResponse[(]"Hello from Rust') # checks
+
 		self.assertGrep('mycorrelator.out', expr=r'Creating transport with config.*String\("myConfigKey"\): String\("config string value"\)')
 		self.assertGrep('mycorrelator.out', expr=r'EchoTransport shutdown done')
 		self.assertGrep('mycorrelator.out', expr=r'EchoTransport Dropped')
