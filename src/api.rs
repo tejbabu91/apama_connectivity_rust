@@ -116,15 +116,24 @@ pub mod public_api {
         }
     }
 
+    /// Data is a Rust enum for the various kinds of data that can be passed in connectivity messages 
+    /// or used to configure plug-ins.   
     #[derive(Debug, PartialEq, Clone)]
     pub enum Data {
         Boolean(bool),
         Integer(i64),
         Float(f64),
+
+        /// An owned and dynamically-sized String. 
         String(String),
+
         List(Vec<Data>),
         Map(HashMap<Data, Data>),
+
+        /// An untyped byte buffer. 
         Buffer(Vec<u8>),
+
+        /// Equivalent to the concept of empty in the C++ API or null in the Java API. 
         None,
     }
 
