@@ -36,18 +36,7 @@ pub struct WebSocketTransport {
     id_tracker: AMIDTracker,
 }
 
-// async fn accept_connection(connections: AMConnections, id_tracker: AMIDTracker, peer: SocketAddr, stream: TcpStream) {
-//     if let Err(e) = handle_connection(peer, stream).await {
-//         match e {
-//             Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
-//             err => error!("Error processing connection: {}", err),
-//         }
-//     }
-// }
-
 fn websocket_message_to_message(m: WSMessage, id: usize) -> Message {
-    // let mut d = HashMap::new();
-    // d.insert(Data::String(String::from("data")), Data::String(format!("{}", m)));
     let mut m = Message {
         payload: Data::String(format!("{}", m)),
         metadata: HashMap::new(),
@@ -64,7 +53,6 @@ async fn handle_connection(
     conn_arc: AMConnections,
     mut to_host_channel: Sender<Message>,
 ) -> TResult<()> {
-    // let ws_stream = accept_async(stream).await?;
     let (mut sender, mut receiver) = ws_stream.split();
 
     info!("New WebSocket connection: {}", peer);
@@ -75,8 +63,6 @@ async fn handle_connection(
     task::spawn(async move {
         task::spawn(async move {
             while let Some(m) = rx.recv().await {
-                // let c = m.clone();
-                // info!("sending back: {}", m);
                 if let Err(e) = sender.send(m).await {
                     rx.close();
                     error!("client connection closed: {}", e);
@@ -92,7 +78,6 @@ async fn handle_connection(
                         .send(websocket_message_to_message(msg, id))
                         .await
                         .expect("send into buffer");
-                    // ws_stream.send(msg).await.expect("sending failed");
                 }
             }
         }
@@ -150,19 +135,18 @@ impl Transport for WebSocketTransport {
                 }
             }
         });
-        println!("WebSocketTransport started");
+        info!("WebSocketTransport started");
     }
     fn shutdown(&mut self) {
         // dropping runtime reference kills all tasks
         self.runtime = None;
-        // std::thread::sleep(std::time::Duration::from_millis(10000));
-        println!("WebSocketTransport shutdown done");
+        info!("WebSocketTransport shutdown done");
     }
     fn hostReady(&mut self) {
-        println!("WebSocketTransport handled hostReady");
+        info!("WebSocketTransport handled hostReady");
     }
     fn deliverMessageTowardsTransport(&mut self, msg: Message) {
-        // println!("WebSocketTransport received message from host: {:?}", msg);
+        // info!("WebSocketTransport received message from host: {:?}", msg);
 
         let wsm = WSMessage::from(format!(
             "{}",
@@ -175,28 +159,6 @@ impl Transport for WebSocketTransport {
             Some(Data::Integer(v)) => v,
             _ => return,
         };
-        // // echo message back towards host
-        // let mut m = HashMap::new();
-        // m.insert(
-        //     Data::String("str".to_string()),
-        //     Data::String("Hello from Rust!".to_string()),
-        // );
-        // m.insert(
-        //     Data::String("name".to_string()),
-        //     Data::String("value".to_string()),
-        // );
-        // m.insert(
-        //     Data::Integer(35),
-        //     Data::List(vec![
-        //         Data::String(format!("Sending back {}", msg.payload)),
-        //         Data::Boolean(true),
-        //     ]),
-        // );
-        // let m = Message {
-        //     // payload: Data::String(format!("Sending back {}", msg.payload)),
-        //     payload: Data::Map(m),
-        //     metadata: msg.metadata,
-        // };
         if let Some(tx) = self.connections.lock().unwrap().get_mut(&(*id as u64)) {
             let mut tmptx = tx.clone();
             self.runtime.as_ref().unwrap().spawn(async move {
@@ -211,9 +173,9 @@ impl Transport for WebSocketTransport {
         &mut self.transportParams
     }
     fn new(h: HostSide, params: TransportConstructorParameters) -> Box<dyn Transport> {
-        println!("Creating transport with config {:?}", params);
+        info!("Creating transport with config {:?}", params);
 
-        // move all string keys into cfg
+        // copy all string keys into cfg
         let cfg: HashMap<String, Data> = params
             .getConfig()
             .iter()
