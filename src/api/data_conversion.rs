@@ -28,6 +28,7 @@ extern "C" {
         payload: *mut sag_underlying_data_t,
         metadata: *mut sag_underlying_map_t,
     ) -> *mut sag_underlying_message_t;
+    pub fn free_cpp_message_t(m: *mut sag_underlying_message_t);
 }
 
 pub fn c_to_rust_msg(t: &sag_underlying_message_t) -> Message {

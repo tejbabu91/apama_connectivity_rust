@@ -22,6 +22,7 @@ extern "C"
 	void insert_into_map_t(sag_underlying_map_t *m, sag_underlying_data_t *key, sag_underlying_data_t *value);
 	sag_underlying_data_t *create_cpp_data_t_map_t(sag_underlying_map_t *val);
 	sag_underlying_message_t *create_cpp_message_t(sag_underlying_data_t *payload, sag_underlying_map_t *metadata);
+	void free_cpp_message_t(sag_underlying_message_t *m);
 }
 
 #endif

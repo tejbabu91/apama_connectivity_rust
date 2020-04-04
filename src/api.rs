@@ -74,7 +74,8 @@ pub mod public_api {
             unsafe {
                 let m = super::data_conversion::rust_to_c_msg(&msg);
                 self.send_fn.unwrap()(self.host_plugin.clone(), m, m.offset(1));
-                // TODO: Do we need to manually free the 'm' here?
+                // freeing m since we don't need it after transmit
+                super::data_conversion::free_cpp_message_t(m);
             }
         }
         pub fn new() -> HostSide {
