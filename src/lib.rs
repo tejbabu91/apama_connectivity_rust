@@ -107,7 +107,7 @@ macro_rules! DECLARE_CONNECTIVITY_CODEC {
             pub extern fn [<sag_plugin_setNextTowardsHost_$elem>](mut p: $crate::api::ctypes::sag_plugin_t, next_plugin: $crate::api::ctypes::sag_plugin_t, send_fn: $crate::api::ctypes::sag_send_fn_t)  -> $crate::api::ctypes::sag_error_t {
                 $crate::api::plugin_impl_fn::rs_plugin_setNextTowardsHost_codec_impl(&mut p, next_plugin, send_fn)
             }
-            
+
             #[no_mangle]
             pub extern fn [<sag_plugin_setNextTowardsTransport_$elem>](mut p: $crate::api::ctypes::sag_plugin_t, next_plugin: $crate::api::ctypes::sag_plugin_t, send_fn: $crate::api::ctypes::sag_send_fn_t)  -> $crate::api::ctypes::sag_error_t {
                 $crate::api::plugin_impl_fn::rs_plugin_setNextTowardsTransport_codec_impl(&mut p, next_plugin, send_fn)
@@ -125,4 +125,3 @@ macro_rules! DECLARE_CONNECTIVITY_CODEC {
         }
     }
 }
-
