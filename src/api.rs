@@ -3,6 +3,8 @@
 #![allow(non_upper_case_globals)]
 
 pub mod ctypes;
+pub mod data_conversion;
+pub mod plugin_impl_fn;
 
 pub mod public_api {
     use super::ctypes;
@@ -84,7 +86,11 @@ pub mod public_api {
             }
         }
 
-        pub fn update(&mut self, host_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t) {
+        pub fn update(
+            &mut self,
+            host_plugin: ctypes::sag_plugin_t,
+            send_fn: ctypes::sag_send_fn_t,
+        ) {
             self.host_plugin = host_plugin;
             self.send_fn = send_fn;
         }
@@ -93,7 +99,7 @@ pub mod public_api {
     pub trait Transport {
         fn start(&mut self);
         fn shutdown(&mut self);
-        fn hostReady(&mut self);      
+        fn hostReady(&mut self);
         fn deliverMessageTowardsTransport(&mut self, msg: Message);
         fn getHostSide(&mut self) -> &mut HostSide;
         fn getParams(&mut self) -> &mut TransportConstructorParameters;
@@ -116,7 +122,7 @@ pub mod public_api {
         }
     }
 
-    /// Data is a Rust enum for the various kinds of data that can be passed in connectivity messages 
+    /// Data is a Rust enum for the various kinds of data that can be passed in connectivity messages
     /// or used to configure plug-ins.   
     #[derive(Debug, PartialEq, Clone)]
     pub enum Data {
@@ -124,39 +130,29 @@ pub mod public_api {
         Integer(i64),
         Float(f64),
 
-        /// An owned and dynamically-sized String. 
-        /// 
-        /// Use this type for your strings unless you want to reference a static string literal 
-        /// in which case StaticStr will be a better choice. 
-        /// 
-        /// 
+        /// An owned and dynamically-sized String.
+        ///
+        /// Use this type for your strings unless you want to reference a static string literal
+        /// in which case StaticStr will be a better choice.
+        ///
+        ///
         String(String),
 
         /// An immutable reference to a static string (or slice of one), which is a convenient  
         /// way to reference a static string literal. In future versions of the API this may be more efficient (reduced copies).
-        /// 
-        /// This is similar to the CONST_STRING type in the C++ data_t. 
+        ///
+        /// This is similar to the CONST_STRING type in the C++ data_t.
         //StaticStr(&'static str), // TODO: is this still worth having, given it's no more efficient?
-
         List(Vec<Data>),
         Map(HashMap<Data, Data>),
 
-        /// An untyped byte buffer. 
+        /// An untyped byte buffer.
         Buffer(Vec<u8>),
 
-        /// Equivalent to the concept of empty in the C++ API or null in the Java API. 
+        /// Equivalent to the concept of empty in the C++ API or null in the Java API.
         None,
     }
 
-    impl Data {
-        pub fn get_string(&self) -> Option<&String> {
-            match self {
-                Data::String(v) => Some(v),
-                _ => None,
-            }
-        }
-    }
-    
     #[macro_export]
     macro_rules! DATA_GETTER {
         ($name:ident, $variant:ident, $the_type:ty) => {
@@ -192,7 +188,7 @@ pub mod public_api {
                     }
                 }
             }
-        }
+        };
     }
 
     impl Data {
@@ -287,7 +283,6 @@ pub mod public_api {
         }
     }
 
-
     pub struct TransportSide {
         next_plugin: ctypes::sag_plugin_t,
         send_fn: ctypes::sag_send_fn_t,
@@ -308,7 +303,11 @@ pub mod public_api {
             }
         }
 
-        pub fn update(&mut self, next_plugin: ctypes::sag_plugin_t, send_fn: ctypes::sag_send_fn_t) {
+        pub fn update(
+            &mut self,
+            next_plugin: ctypes::sag_plugin_t,
+            send_fn: ctypes::sag_send_fn_t,
+        ) {
             self.next_plugin = next_plugin;
             self.send_fn = send_fn;
         }
@@ -326,7 +325,11 @@ pub mod public_api {
         fn getHostSide(&mut self) -> &mut HostSide;
         fn getTransportSide(&mut self) -> &mut TransportSide;
 
-        fn new(host: HostSide, transportSide: TransportSide, params: CodecConstructorParameters) -> Box<dyn Codec>
+        fn new(
+            host: HostSide,
+            transportSide: TransportSide,
+            params: CodecConstructorParameters,
+        ) -> Box<dyn Codec>
         where
             Self: Sized;
     }
@@ -342,373 +345,6 @@ pub mod public_api {
                 Box::from_raw(self.codec);
             }
         }
-    }
-}
-
-pub mod plugin_impl_fn {
-    use super::ctypes;
-    use super::public_api::*;
-
-    impl ctypes::sag_plugin_t {
-        fn transport(&mut self) -> &mut dyn Transport {
-            unsafe {
-                let wt = self.r#plugin as *mut WrappedTransport;
-                &mut *((*wt).transport)
-            }
-        }
-        fn codec(&mut self) -> &mut dyn Codec {
-            unsafe {
-                let wt = self.r#plugin as *mut WrappedCodec;
-                &mut *((*wt).codec)
-            }
-        }
-    }
-
-    pub fn rs_plugin_create_transport(transport: Box<dyn Transport>) -> ctypes::sag_plugin_t {
-        let wt = Box::new(WrappedTransport{transport: Box::into_raw(transport)});
-        let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
-        p
-    }
-    pub fn rs_plugin_destroy_impl(plug: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        unsafe {
-            let wt = plug.r#plugin as *mut WrappedTransport;
-            // Take the ownership back so that it gets destroyed at the end of the scope.
-            Box::from_raw(wt);
-        }
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_start_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        p.transport().start();
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_shutdown_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        p.transport().shutdown();
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_hostReady_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        p.transport().hostReady();
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_setNextTowardsHost_impl(
-        this_plugin: &mut ctypes::sag_plugin_t,
-        host_plugin: ctypes::sag_plugin_t,
-        send_fn: ctypes::sag_send_fn_t,
-    ) -> ctypes::sag_error_t {
-        let host = this_plugin.transport().getHostSide();
-        host.update(host_plugin, send_fn);
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub extern "C" fn rs_plugin_sendBatchTowardsTransport_impl(
-        plug: &mut ctypes::sag_plugin_t,
-        start: *mut ctypes::sag_underlying_message_t,
-        end: *mut ctypes::sag_underlying_message_t,
-    ) -> ctypes::sag_error_t {
-        unsafe {
-            let mut i = 0;
-            loop {
-                let p = start.offset(i);
-                if p == end {
-                    break;
-                }
-                let msg = super::data_conversion::c_to_rust_msg(&*p);
-                plug.transport().deliverMessageTowardsTransport(msg);
-                i += 1;
-            }
-        }
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_create_codec(codec: Box<dyn Codec>) -> ctypes::sag_plugin_t {
-        let wt = Box::new(WrappedCodec{codec: Box::into_raw(codec)});
-        let p  = ctypes::sag_plugin_t { r#plugin: Box::into_raw(wt) as *mut libc::c_void };
-        p
-    }
-    pub fn rs_plugin_destroy_codec_impl(plug: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        unsafe {
-            let wt = plug.r#plugin as *mut WrappedCodec;
-            // Take the ownership back so that it gets destroyed at the end of the scope.
-            Box::from_raw(wt);
-        }
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_start_codec_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        p.codec().start();
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_shutdown_codec_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        p.codec().shutdown();
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_hostReady_codec_impl(p: &mut ctypes::sag_plugin_t) -> ctypes::sag_error_t {
-        p.codec().hostReady();
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_setNextTowardsHost_codec_impl(
-        this_plugin: &mut ctypes::sag_plugin_t,
-        next_plugin: ctypes::sag_plugin_t,
-        send_fn: ctypes::sag_send_fn_t,
-    ) -> ctypes::sag_error_t {
-        let side = this_plugin.codec().getHostSide();
-        side.update(next_plugin, send_fn);
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub fn rs_plugin_setNextTowardsTransport_codec_impl(
-        this_plugin: &mut ctypes::sag_plugin_t,
-        next_plugin: ctypes::sag_plugin_t,
-        send_fn: ctypes::sag_send_fn_t,
-    ) -> ctypes::sag_error_t {
-        let side = this_plugin.codec().getTransportSide();
-        side.update(next_plugin, send_fn);
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub extern "C" fn rs_plugin_sendBatchTowardsTransport_codec_impl(
-        plug: &mut ctypes::sag_plugin_t,
-        start: *mut ctypes::sag_underlying_message_t,
-        end: *mut ctypes::sag_underlying_message_t,
-    ) -> ctypes::sag_error_t {
-        unsafe {
-            let mut i = 0;
-            loop {
-                let p = start.offset(i);
-                if p == end {
-                    break;
-                }
-                let msg = super::data_conversion::c_to_rust_msg(&*p);
-                plug.codec().deliverMessageTowardsTransport(msg);
-                i += 1;
-            }
-        }
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-
-    pub extern "C" fn rs_plugin_sendBatchTowardsHost_codec_impl(
-        plug: &mut ctypes::sag_plugin_t,
-        start: *mut ctypes::sag_underlying_message_t,
-        end: *mut ctypes::sag_underlying_message_t,
-    ) -> ctypes::sag_error_t {
-        unsafe {
-            let mut i = 0;
-            loop {
-                let p = start.offset(i);
-                if p == end {
-                    break;
-                }
-                let msg = super::data_conversion::c_to_rust_msg(&*p);
-                plug.codec().deliverMessageTowardsHost(msg);
-                i += 1;
-            }
-        }
-        ctypes::sag_error_t_SAG_ERROR_OK
-    }
-}
-pub mod data_conversion {
-    use super::ctypes::*;
-    use super::public_api::*;
-    use std::collections::HashMap;
-    use std::ffi::{CStr};
-
-    /** C++ functions to create C++ message object from Rust. */
-    extern "C" {
-        fn create_cpp_data_t_empty() -> *mut sag_underlying_data_t;
-        fn create_cpp_data_t_bool(val: bool) -> *mut sag_underlying_data_t;
-        fn create_cpp_data_t_int64(val: i64) -> *mut sag_underlying_data_t;
-        fn create_cpp_data_t_double(val: f64) -> *mut sag_underlying_data_t;
-        fn create_cpp_data_t_string(s: *const int_fast8_t, len: usize) -> *mut sag_underlying_data_t;
-        fn create_cpp_data_t_buffer(
-            buf: *const uint_fast8_t,
-            size_t: uint_least64_t,
-        ) -> *mut sag_underlying_data_t;
-        fn create_cpp_list_t_with_capacity(capacity: i64) -> *mut sag_underlying_vector_t;
-        fn append_to_list_t(l: *mut sag_underlying_vector_t, d: *mut sag_underlying_data_t);
-        fn create_cpp_data_t_list_t(
-            val: *mut sag_underlying_vector_t,
-        ) -> *mut sag_underlying_data_t;
-        fn create_cpp_map_t() -> *mut sag_underlying_map_t;
-        fn insert_into_map_t(
-            m: *mut sag_underlying_map_t,
-            key: *mut sag_underlying_data_t,
-            value: *mut sag_underlying_data_t,
-        );
-        fn create_cpp_data_t_map_t(val: *mut sag_underlying_map_t) -> *mut sag_underlying_data_t;
-        fn create_cpp_message_t(
-            payload: *mut sag_underlying_data_t,
-            metadata: *mut sag_underlying_map_t,
-        ) -> *mut sag_underlying_message_t;
-    }
-
-    pub fn c_to_rust_msg(t: &sag_underlying_message_t) -> Message {
-        Message {
-            payload: c_to_rust_data(&t.payload),
-            metadata: c_to_rust_map(&t.metadata),
-        }
-    }
-    pub fn c_to_rust_data(t: &sag_underlying_data_t) -> Data {
-        unsafe {
-            let tag = t.tag;
-            let val = t.__bindgen_anon_1;
-            match tag {
-                sag_data_tag_SAG_DATA_EMPTY => Data::None,
-                sag_data_tag_SAG_DATA_BOOLEAN => Data::Boolean(val.boolean),
-                sag_data_tag_SAG_DATA_DOUBLE => Data::Float(val.fp),
-                sag_data_tag_SAG_DATA_INTEGER => Data::Integer(val.integer),
-                sag_data_tag_SAG_DATA_STRING => {
-                    Data::String(CStr::from_ptr(val.string).to_string_lossy().into_owned())
-                }
-                sag_data_tag_SAG_DATA_LIST => {
-                    let v = match val.list.table.as_ref() {
-                        Some(val) => {
-                            let mut v: Vec<Data> = Vec::with_capacity(val.count as usize);
-                            for x in 0..val.count {
-                                // Need to use get_unchecked because C defined data as array of size 1
-                                v.push(c_to_rust_data(&val.data.get_unchecked(x as usize)));
-                            }
-                            v
-                        }
-                        None => Vec::new(),
-                    };
-                    Data::List(v)
-                }
-                sag_data_tag_SAG_DATA_MAP => Data::Map(c_to_rust_map(&val.map)),
-                sag_data_tag_SAG_DATA_DECIMAL => Data::None,
-                sag_data_tag_SAG_DATA_BUFFER => match val.buffer.table.as_ref() {
-                    Some(x) => {
-                        let bufsize = x.length as usize;
-                        let mut rbuf: Vec<u8> = Vec::with_capacity(bufsize);
-                        std::ptr::copy_nonoverlapping(x.data.as_ptr(), rbuf.as_mut_ptr(), bufsize);
-                        Data::Buffer(rbuf)
-                    }
-                    None => Data::Buffer(Vec::new()),
-                },
-                sag_data_tag_SAG_DATA_CUSTOM => Data::None,
-                _ => Data::None,
-            }
-        }
-    }
-    pub fn c_to_rust_map(m: &sag_underlying_map_t) -> HashMap<Data, Data> {
-        unsafe {
-            if let None = m.table.as_ref() {
-                return HashMap::new();
-            }
-            let val = &*(m.table);
-            let mut map: HashMap<Data, Data> = HashMap::with_capacity(val.capacity as usize);
-            for i in 0..val.capacity {
-                let entry = val.table.get_unchecked(i as usize);
-                if entry.hash <= 0 {
-                    continue; // hole
-                }
-                let key = c_to_rust_data(&entry.key);
-                let value = c_to_rust_data(&entry.value);
-                // convert key into string if not a string
-                // let key = match key {
-                //     Data::String(s) => s,
-                //     _ => key.to_string()
-                // };
-                map.insert(key, value);
-            }
-            map
-        }
-    }
-
-    pub fn rust_to_c_msg(msg: &Message) -> *mut sag_underlying_message_t {
-        let payload = rust_to_c_data(&msg.payload);
-        unsafe {
-            let cpp_metadata = create_cpp_map_t();
-            for (k, v) in msg.metadata.iter() {
-                let cpp_key = rust_to_c_data(k);
-                let cpp_val = rust_to_c_data(v);
-                insert_into_map_t(cpp_metadata, cpp_key, cpp_val);
-            }
-            create_cpp_message_t(payload, cpp_metadata)
-        }
-    }
-
-    #[allow(unused_variables)]
-    #[allow(unused_assignments)]
-    pub fn rust_to_c_data(data: &Data) -> *mut sag_underlying_data_t {
-        // unsafe {
-        // let mut tag = sag_data_tag_SAG_DATA_EMPTY;
-        // let mut val = sag_underlying_data_t__bindgen_ty_1 { boolean: true };
-        match data {
-            Data::None => unsafe { create_cpp_data_t_empty() },
-            Data::Boolean(v) => {
-                // tag = sag_data_tag_SAG_DATA_BOOLEAN;
-                // val.boolean = *v;
-                unsafe { create_cpp_data_t_bool(*v) }
-            }
-            Data::Integer(v) => {
-                // tag = sag_data_tag_SAG_DATA_INTEGER;
-                // val.integer = *v;
-                unsafe { create_cpp_data_t_int64(*v) }
-            }
-            Data::Float(v) => {
-                // tag = sag_data_tag_SAG_DATA_DOUBLE;
-                // val.fp = *v;
-                unsafe { create_cpp_data_t_double(*v) }
-            }
-            Data::String(v) => {
-                // TODO: maybe we should do some validation to check that the Rust string doesn't contain nulls (perhaps CStr can help us with that)
-
-                // pass the length explicitly because in Rust, string buffers are not null-terminated; plus, it's good practice
-                unsafe { create_cpp_data_t_string(v.as_ptr() as *const i8, v.len()) }
-            }
-            /*Data::StaticStr(v) => {
-                // unfortunately can't use the zero-copy data_t CONST_STRING constructor as data_t assumes its strings are null-terminated which isn't the case for Rust strings
-                unsafe { create_cpp_data_t_string(v.as_ptr() as *const i8, v.len()) }
-            }*/
-            Data::List(v) => {
-                // tag = sag_data_tag_SAG_DATA_LIST;
-                // // sag_underlying_vector_table_t
-                // // sag_underlying_vector
-                // let mut vv: Vec<sag_underlying_data_t> = Vec::with_capacity(v.len());
-                // for e in v {
-                //     vv.push(rust_to_c_data(e));
-                // }
-                // // let x= v.as_mut_ptr();
-                // let y: [sag_underlying_data_t; 1usize] = vv.as_mut_ptr();
-                unsafe {
-                    let l = create_cpp_list_t_with_capacity(v.len() as i64);
-                    let cpp_vals: Vec<_> = v.iter().map(|d| rust_to_c_data(d)).collect();
-                    for cpp_val in cpp_vals {
-                        append_to_list_t(l, cpp_val);
-                    }
-                    create_cpp_data_t_list_t(l)
-                }
-            }
-            Data::Map(v) => {
-                // tag = sag_data_tag_SAG_DATA_MAP;
-                unsafe {
-                    let m = create_cpp_map_t();
-                    let cpp_vals: Vec<_> = v
-                        .iter()
-                        .map(|(k, v)| (rust_to_c_data(k), rust_to_c_data(v)))
-                        .collect();
-                    for cpp_val in cpp_vals {
-                        let (key, val) = cpp_val;
-                        insert_into_map_t(m, key, val);
-                    }
-                    create_cpp_data_t_map_t(m)
-                }
-            }
-            Data::Buffer(v) => {
-                let size = v.len();
-                unsafe { create_cpp_data_t_buffer(v.as_ptr(), size as u64) }
-            } // _ => {
-              //     // tag = sag_data_tag_SAG_DATA_EMPTY;
-              //     unsafe { create_cpp_data_t_empty() }
-              // }
-        }
-        // }
     }
 }
 
