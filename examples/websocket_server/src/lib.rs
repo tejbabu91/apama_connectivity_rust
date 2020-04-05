@@ -178,22 +178,18 @@ impl Transport for WebSocketTransport {
             .getConfig()
             .iter()
             .filter(|(k, _)| k.is_string())
-            .map(|(k, v)| (k.as_opt_string().unwrap().clone(), v.clone()))
+            .map(|(k, v)| (k.to_string(), v.clone()))
             .collect();
         let host = cfg
             .get(&String::from("host"))
             .or(Some(&Data::String("127.0.0.1".to_string())))
             .unwrap()
-            .as_opt_string()
-            .expect("host value should be of type string")
-            .clone();
+            .to_string();
         let port = cfg
             .get(&String::from("port"))
             .or(Some(&Data::String("3999".to_string())))
             .unwrap()
-            .as_opt_string()
-            .expect("port value should be of type string")
-            .clone();
+            .to_string();
 
         let runtime = tokio::runtime::Runtime::new().unwrap();
         Box::new(WebSocketTransport {
