@@ -12,8 +12,6 @@ edition = "2018"
 "tokio" = { version = "0.2.16", features = ["full"] }
 "futures" = "0.3.4"
 "futures-util" = { version = "0.3.4" }
-"async-std" = "1.5.0"
-"futures-channel" = "0.3.4"
 "log" = "0.4.8"
 "env_logger" = "0.7.1"
 "rust_ap_connectivity" = { path = "../../" }

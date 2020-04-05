@@ -1,5 +1,3 @@
-use async_std::sync::Arc;
-
 use futures_util::{SinkExt, StreamExt};
 use log::LevelFilter;
 use log::{error, info};
@@ -7,13 +5,13 @@ use rust_ap_connectivity::*;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::sync::Mutex as BlockingMutex;
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use tokio::task;
 use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::protocol::Message as WSMessage;
@@ -21,7 +19,7 @@ use tungstenite::Result as TResult;
 pub struct WebSocketServerConfig {
     host: String,
     port: String,
-    otherConfig: HashMap<String, Data>,
+    config: HashMap<String, Data>,
 }
 
 type AMConnections = Arc<BlockingMutex<HashMap<u64, Sender<WSMessage>>>>;
@@ -30,7 +28,7 @@ type AMIDTracker = Arc<AtomicUsize>;
 pub struct WebSocketTransport {
     config: WebSocketServerConfig,
     hostside: HostSide,
-    transportParams: TransportConstructorParameters,
+    transport_params: TransportConstructorParameters,
     runtime: Option<tokio::runtime::Runtime>,
     connections: AMConnections,
     id_tracker: AMIDTracker,
@@ -60,8 +58,8 @@ async fn handle_connection(
 
     conn_arc.lock().unwrap().insert(id as u64, tx);
 
-    task::spawn(async move {
-        task::spawn(async move {
+    tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(m) = rx.recv().await {
                 if let Err(e) = sender.send(m).await {
                     rx.close();
@@ -170,7 +168,7 @@ impl Transport for WebSocketTransport {
         &mut self.hostside
     }
     fn getParams(&mut self) -> &mut TransportConstructorParameters {
-        &mut self.transportParams
+        &mut self.transport_params
     }
     fn new(h: HostSide, params: TransportConstructorParameters) -> Box<dyn Transport> {
         info!("Creating transport with config {:?}", params);
@@ -202,10 +200,10 @@ impl Transport for WebSocketTransport {
             config: WebSocketServerConfig {
                 host,
                 port,
-                otherConfig: cfg,
+                config: cfg,
             },
             hostside: h,
-            transportParams: params,
+            transport_params: params,
             runtime: Some(runtime),
             connections: Arc::new(BlockingMutex::from(HashMap::new())),
             id_tracker: Arc::new(AtomicUsize::new(1)),
