@@ -6,12 +6,11 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::sync::Mutex as BlockingMutex;
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::{Receiver, Sender};
-
+use tokio::sync::Mutex;
 use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::protocol::Message as WSMessage;
@@ -22,7 +21,7 @@ pub struct WebSocketServerConfig {
     config: HashMap<String, Data>,
 }
 
-type AMConnections = Arc<BlockingMutex<HashMap<u64, Sender<WSMessage>>>>;
+type AMConnections = Arc<Mutex<HashMap<u64, Sender<WSMessage>>>>;
 type AMIDTracker = Arc<AtomicUsize>;
 
 pub struct WebSocketTransport {
@@ -56,7 +55,7 @@ async fn handle_connection(
     info!("New WebSocket connection: {}", peer);
     let (tx, mut rx): (Sender<WSMessage>, Receiver<WSMessage>) = channel(100);
 
-    conn_arc.lock().unwrap().insert(id as u64, tx);
+    conn_arc.lock().await.insert(id as u64, tx);
 
     tokio::spawn(async move {
         tokio::spawn(async move {
@@ -154,15 +153,16 @@ impl Transport for WebSocketTransport {
                 .unwrap()
         ));
         let id = match msg.metadata.get(&Data::String(String::from("id"))) {
-            Some(Data::Integer(v)) => v,
+            Some(Data::Integer(v)) => *v,
             _ => return,
         };
-        if let Some(tx) = self.connections.lock().unwrap().get_mut(&(*id as u64)) {
-            let mut tmptx = tx.clone();
-            self.runtime.as_ref().unwrap().spawn(async move {
+        let local_arc = Arc::clone(&self.connections);
+        self.runtime.as_ref().unwrap().spawn(async move {
+            if let Some(tx) = local_arc.lock().await.get_mut(&(id as u64)) {
+                let mut tmptx = tx.clone();
                 tmptx.send(wsm).await.expect("sending to client channel");
-            });
-        }
+            }
+        });
     }
     fn getHostSide(&mut self) -> &mut HostSide {
         &mut self.hostside
@@ -177,7 +177,7 @@ impl Transport for WebSocketTransport {
         let cfg: HashMap<String, Data> = params
             .getConfig()
             .iter()
-            .filter(|(k, _)| matches!(k, Data::String(_)))
+            .filter(|(k, _)| k.is_string())
             .map(|(k, v)| (k.as_opt_string().unwrap().clone(), v.clone()))
             .collect();
         let host = cfg
@@ -192,7 +192,7 @@ impl Transport for WebSocketTransport {
             .or(Some(&Data::String("3999".to_string())))
             .unwrap()
             .as_opt_string()
-            .expect("host value should be of type string")
+            .expect("port value should be of type string")
             .clone();
 
         let runtime = tokio::runtime::Runtime::new().unwrap();
@@ -205,7 +205,7 @@ impl Transport for WebSocketTransport {
             hostside: h,
             transport_params: params,
             runtime: Some(runtime),
-            connections: Arc::new(BlockingMutex::from(HashMap::new())),
+            connections: Arc::new(Mutex::from(HashMap::new())),
             id_tracker: Arc::new(AtomicUsize::new(1)),
         })
     }
